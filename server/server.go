@@ -21,7 +21,7 @@ import (
 	"go.opencensus.io/stats/view"
 )
 
-// gcr.io/snowcloud-01/playground/frontend:YYYMMDD00
+// gcr.io/snowcloud-01/static-web/frontend:YYYYMMDD00
 
 var (
 	enableLogs = flag.Bool("enable_logging", false, "Set to enable logging.")

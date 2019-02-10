@@ -3,5 +3,8 @@
 		{
 			"path": "."
 		}
-	]
+	],
+	"settings": {
+		"docker.defaultRegistryPath": "gcr.io/snowcloud-01/static-web"
+	}
 }

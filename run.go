@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	addr            = flag.String("listen-address", ":3000", "The address to listen on for HTTP requests.")
+	addr            = flag.String("listen-address", ":8080", "The address to listen on for HTTP requests.")
 	gracefulTimeout = flag.Duration("graceful_timeout_sec", 5*time.Second, "duration to wait before shutting down")
 	enableMetrics   = flag.Bool("enable_metrics", false, "Set to enable metrics via stackdriver.")
 )
