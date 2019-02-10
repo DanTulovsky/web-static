@@ -26,7 +26,7 @@ import (
 var (
 	enableLogs = flag.Bool("enable_logging", false, "Set to enable logging.")
 	logDir     = flag.String("log_dir", "", "Top level directory for log files, if empty (and enable_logging) logs to stdout")
-	dataDir    = flag.String("data_dir", "data", "Top level directory for site files.")
+	dataDir    = flag.String("data_dir", "data/hosts", "Top level directory for site files.")
 )
 
 // RootHandler handles requests
@@ -124,7 +124,7 @@ func (s *Server) RegisterHandlers() {
 		http.FileServer(http.Dir(fmt.Sprintf(path.Join(*dataDir, "wetsnow.com"))))))
 
 	// galinasbeautyroom.com
-	r.Host("galinasbeautyroom").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	r.Host("galinasbeautyroom.com").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "https://www.galinasbeautyroom.com/", http.StatusMovedPermanently)
 	})
 	r.Host("{subdomain:[a-z]*}.galinasbeautyroom.com").Handler(handlers.CombinedLoggingHandler(logFile,
