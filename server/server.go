@@ -117,14 +117,16 @@ func (s *Server) RegisterHandlers() {
 	r.HandleFunc("/servez", HandleServez)
 
 	// wetsnow.com
-	r.Host("wetsnow.com").Handler(handlers.CombinedLoggingHandler(logFile,
-		http.FileServer(http.Dir(fmt.Sprintf(path.Join(*dataDir, "wetsnow.com"))))))
+	r.Host("wetsnow.com").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "https://www.wetsnow.com/", http.StatusMovedPermanently)
+	})
 	r.Host("{subdomain:[a-z]*}.wetsnow.com").Handler(handlers.CombinedLoggingHandler(logFile,
 		http.FileServer(http.Dir(fmt.Sprintf(path.Join(*dataDir, "wetsnow.com"))))))
 
 	// galinasbeautyroom.com
-	r.Host("galinasbeautyroom.com").Handler(handlers.CombinedLoggingHandler(logFile,
-		http.FileServer(http.Dir(fmt.Sprintf(path.Join(*dataDir, "galinasbeautyroom.com"))))))
+	r.Host("galinasbeautyroom").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "https://www.galinasbeautyroom.com/", http.StatusMovedPermanently)
+	})
 	r.Host("{subdomain:[a-z]*}.galinasbeautyroom.com").Handler(handlers.CombinedLoggingHandler(logFile,
 		http.FileServer(http.Dir(fmt.Sprintf(path.Join(*dataDir, "galinasbeautyroom.com"))))))
 
