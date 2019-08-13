@@ -1,0 +1,14 @@
+apiVersion: skaffold/v1beta13
+kind: Config
+build:
+  artifacts:
+    - image: 'gcr.io/snowcloud-01/static-web/frontend'
+  tagPolicy:
+    gitCommit: {}
+  googleCloudBuild:
+    projectId: snowcloud-01
+deploy:
+  kubectl:
+    manifests:
+      - k8s/20-service.yaml
+      - k8s/30-deployment.yaml

@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: static-web
+spec:
+  replicas: 3
+  selector: 
+    matchLabels:
+      app: static-web
+      component: frontend
+      tier: production
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+  template:
+    metadata:
+      labels:
+        app: static-web
+        component: frontend
+        tier: production
+        version: "2019021003"
+    spec:
+      containers:
+        - name: frontend
+          image: gcr.io/snowcloud-01/static-web/frontend
+          args: ["--data_dir", "/data/hosts"]
+          resources:
+            limits:
+              cpu: "1.0"
+              memory: "200M"
+            requests:
+              cpu: "0.02"
+              memory: "20M"
+          ports:
+            - containerPort: 8080
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+              httpHeaders:
+                - name: X-Healthz-Prober
+                  value: liveliness
+            periodSeconds: 5
+            initialDelaySeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /servez
+              port: 8080
+              httpHeaders:
+                - name: X-Healthz-Prober
+                  value: readiness
+            periodSeconds: 5
+            initialDelaySeconds: 5
