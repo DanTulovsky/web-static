@@ -3,5 +3,13 @@
 		{
 			"path": "."
 		}
-	]
+	],
+	"settings": {
+		"cloudcode.profile-cluster-map": {
+			"[default]": "gke_snowcloud-01_us-east1-d_snowcloud-cluster-0"
+		},
+		"cloudcode.profile-registry-map": {
+			"[default]": "gcr.io/snowcloud-01"
+		}
+	}
 }
