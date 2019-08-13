@@ -4,7 +4,10 @@ build:
   artifacts:
     - image: 'gcr.io/snowcloud-01/static-web/frontend'
   tagPolicy:
-    gitCommit: {}
+    # gitCommit: {}
+    dateTime:
+      format: "2006-01-02_15-04-05.999_MST"
+      timezone: "Local"
   googleCloudBuild:
     projectId: snowcloud-01
 deploy:
