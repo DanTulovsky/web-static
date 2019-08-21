@@ -6,10 +6,10 @@ FROM golang:alpine AS builder
 # install git and ca certs for debugger
 RUN apk update && apk add --no-cache git ca-certificates
 
-COPY . $GOPATH/src/gogs.wetsnow.com/dant/web-static
-WORKDIR $GOPATH/src/gogs.wetsnow.com/dant/web-static
+COPY . $GOPATH/src/github.com/DanTulovsky/web-static
+WORKDIR $GOPATH/src/github.com/DanTulovsky/web-static
 
-ADD . /go/src/gogs.wetsnow.com/dant/web-static
+ADD . /go/src/github.com/DanTulovsky/web-static
 
 # fetch deps
 RUN go get -d -v
@@ -23,7 +23,7 @@ RUN go install -v
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates bash
 COPY --from=builder /go/bin/run /go/bin/run
-COPY --from=builder /go/src/gogs.wetsnow.com/dant/web-static/data /data/
+COPY --from=builder /go/src/github.com/DanTulovsky/web-static/data /data/
 
 # run this command automatically
 # can do: docker run -it --rm --entrypoint=/bin/ash image...

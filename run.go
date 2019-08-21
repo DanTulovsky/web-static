@@ -11,7 +11,7 @@ import (
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	"contrib.go.opencensus.io/exporter/stackdriver/monitoredresource"
 	"go.opencensus.io/stats/view"
-	"gogs.wetsnow.com/dant/web-static/server"
+	"github.com/DanTulovsky/web-static/server"
 )
 
 var (
