@@ -1,0 +1,56 @@
+==================================================================
+https://keybase.io/mrwetsnow
+--------------------------------------------------------------------
+
+I hereby claim:
+
+  * I am an admin of https://www.wetsnow.com
+  * I am mrwetsnow (https://keybase.io/mrwetsnow) on keybase.
+  * I have a public key ASA2pNnJtZzaVl8lfAVMZhVmQOTNhFbrfQhZoR77J699Ugo
+
+To do so, I am signing this object:
+
+{
+  "body": {
+    "key": {
+      "eldest_kid": "012036a4d9c9b59cda565f257c054c66156640e4cd8456eb7d0859a11efb27af7d520a",
+      "host": "keybase.io",
+      "kid": "012036a4d9c9b59cda565f257c054c66156640e4cd8456eb7d0859a11efb27af7d520a",
+      "uid": "d09f818d46af0de6c759d461b0411519",
+      "username": "mrwetsnow"
+    },
+    "merkle_root": {
+      "ctime": 1568416312,
+      "hash": "f1e9531945b69f62d41fa5e6eb75853b66c30152686b7a0bfb380c355ef950fc2bfe3a4b8a6e3b6210ae4937b09fbd707c04075471cadcde1645f561ea93841f",
+      "hash_meta": "96a3b301e99f8a89d4dfd3bcc2ef321c417c0109c2743c53e795fe3a565f5f1e",
+      "seqno": 7223875
+    },
+    "service": {
+      "entropy": "zw6e4YE9Nc8AaOVY4nCuTgU5",
+      "hostname": "www.wetsnow.com",
+      "protocol": "https:"
+    },
+    "type": "web_service_binding",
+    "version": 2
+  },
+  "client": {
+    "name": "keybase.io go client",
+    "version": "4.4.2"
+  },
+  "ctime": 1568416316,
+  "expire_in": 504576000,
+  "prev": "7813be63a336687a2726dd1fed1d2ffcc4680262eba8bea82151ebed4bc05115",
+  "seqno": 37,
+  "tag": "signature"
+}
+
+which yields the signature:
+
+hKRib2R5hqhkZXRhY2hlZMOpaGFzaF90eXBlCqNrZXnEIwEgNqTZybWc2lZfJXwFTGYVZkDkzYRW630IWaEe+yevfVIKp3BheWxvYWTESpcCJcQgeBO+Y6M2aHonJt0f7R0v/MRoAmLrqL6oIVHr7UvAURXEIMIPmJIxjO/QAdeY14J8rJrar+OYTjCcZruwACOT4nsQAgHCo3NpZ8RAjb4DFrUdLjphBjGxJDCI746yP6xu+4ozToChCGUEIuPqjAaMKTtHHQJ0Wnf9POClvhuWxVL314l+c3apSEq3CqhzaWdfdHlwZSCkaGFzaIKkdHlwZQildmFsdWXEINKFlb5aZ+K0x/GKytP912DivkJBAFI0fBIooHttM/Eeo3RhZ80CAqd2ZXJzaW9uAQ==
+
+And finally, I am proving ownership of this host by posting or
+appending to this document.
+
+View my publicly-auditable identity here: https://keybase.io/mrwetsnow
+
+==================================================================
