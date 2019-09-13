@@ -21,7 +21,7 @@ spec:
         app: static-web
         component: frontend
         tier: production
-        version: "2019021003"
+        version: "2019091300"
     spec:
       containers:
         - name: frontend
@@ -38,7 +38,7 @@ spec:
             - containerPort: 8080
           livenessProbe:
             httpGet:
-              path: /healthz
+              path:2/healthz
               port: 8080
               httpHeaders:
                 - name: X-Healthz-Prober
