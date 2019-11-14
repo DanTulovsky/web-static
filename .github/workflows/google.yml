@@ -20,8 +20,8 @@ env:
   GKE_PROJECT: ${{ secrets.GKE_PROJECT }}
   GKE_EMAIL: ${{ secrets.GKE_EMAIL }}
   GITHUB_SHA: ${{ github.sha }}
-  GKE_ZONE: snowcloud-cluster-0
-  GKE_CLUSTER: snowcloud-01
+  GKE_ZONE: us-east1-d
+  GKE_CLUSTER: snowcloud-cluster-0
   IMAGE: static-web/frontend
 
 jobs:
