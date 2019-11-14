@@ -7,6 +7,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
+    - name: Configure git for private modules
+      env:
+        TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+      run: git config --global url."https://DanTulovsky:${TOKEN}@github.com".insteadOf "https://github.com"
+  
     - name: Set up Go 1.13
       uses: actions/setup-go@v1
       with:
