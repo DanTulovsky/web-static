@@ -22,7 +22,7 @@ env:
   GITHUB_SHA: ${{ github.sha }}
   GKE_ZONE: snowcloud-cluster-0
   GKE_CLUSTER: snowcloud-01
-  IMAGE: goto/server
+  IMAGE: static-web/frontend
 
 jobs:
   setup-build-publish-deploy:
