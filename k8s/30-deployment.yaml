@@ -2,10 +2,10 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: frontend
-  namespace: static-web
+  namespace: web
 spec:
   replicas: 3
-  selector: 
+  selector:
     matchLabels:
       app: static-web
       component: frontend
@@ -21,11 +21,11 @@ spec:
         app: static-web
         component: frontend
         tier: production
-        version: "2019091301"
+        version: "2020020600"
     spec:
       containers:
         - name: frontend
-          image: gcr.io/snowcloud-01/static-web/frontend
+          image: ghcr.io/dantulovsky/web-static/frontend
           args: ["--data_dir", "/data/hosts"]
           resources:
             limits:

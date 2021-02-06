@@ -1,32 +1,21 @@
-# https://torchbox.github.io/k8s-ts-ingress/external/
 apiVersion: v1
 kind: Service
 metadata:
   name: static-web-frontend
-  annotations:
-    getambassador.io/config: |
-      ---
-      apiVersion: ambassador/v1
-      kind:  Mapping
-      name:  static_web_frontend_mapping
-      prefix: /
-      service: static-web-frontend.static-web:8080
-      host_regex: true
-      host: "^(www\\.wetsnow\\.com|wetsnow\\.com|.*galinasbeautyroom\\.com)$"
-  namespace: static-web
+  namespace: web
   labels:
     app: "static-web"
     component: frontend
     tier: production
 spec:
   ports:
-  - port: 8080
-    name: http-web
-    protocol: TCP
-    targetPort: 8080
+    - port: 8080
+      name: http-web
+      protocol: TCP
+      targetPort: 8080
   selector:
     app: static-web
     component: frontend
     tier: production
   sessionAffinity: None # or ClientIP
-  type: NodePort # or LoadBalancer
+  type: ClusterIP
