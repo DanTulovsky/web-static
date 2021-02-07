@@ -176,7 +176,7 @@ type tracingHandler struct {
 	handler http.Handler
 }
 
-func (h tracingHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (h tracingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// trace here
 	tracer := opentracing.GlobalTracer()
 
@@ -191,9 +191,9 @@ func (h tracingHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	defer span.Finish()
 
 	// call real handler
-	h.handler.ServeHTTP(w, req)
-	if req.MultipartForm != nil {
-		req.MultipartForm.RemoveAll()
+	h.handler.ServeHTTP(w, r)
+	if r.MultipartForm != nil {
+		r.MultipartForm.RemoveAll()
 	}
 
 }
