@@ -3,60 +3,52 @@ package main
 import (
 	"context"
 	"flag"
+	"io"
 	"log"
 	"os"
 	"os/signal"
 	"time"
 
-	"contrib.go.opencensus.io/exporter/stackdriver"
-	"contrib.go.opencensus.io/exporter/stackdriver/monitoredresource"
-	"go.opencensus.io/stats/view"
 	"github.com/DanTulovsky/web-static/server"
+	"github.com/opentracing/opentracing-go"
+	"github.com/uber/jaeger-client-go"
+	jaegercfg "github.com/uber/jaeger-client-go/config"
+	jaegerlog "github.com/uber/jaeger-client-go/log"
+	"github.com/uber/jaeger-client-go/zipkin"
+	"github.com/uber/jaeger-lib/metrics"
+
+	_ "net/http/pprof"
+)
+
+const (
+	jaegerSamplingServerURL = "http://otel-collector.observability:5778/sampling"
+	jaegerCollectorEndpoint = "http://otel-collector.observability:14268/api/traces"
+	jaegerServiceName       = "web-static"
 )
 
 var (
-	addr            = flag.String("listen-address", ":8080", "The address to listen on for HTTP requests.")
 	gracefulTimeout = flag.Duration("graceful_timeout_sec", 5*time.Second, "duration to wait before shutting down")
 	enableMetrics   = flag.Bool("enable_metrics", false, "Set to enable metrics via stackdriver.")
 )
 
-func enableStackdriverIntegration() *stackdriver.Exporter {
-	// enable OpenCensus views (prometheus, stackdriver integration)
-	server.EnableViews()
-	exporter, err := stackdriver.NewExporter(stackdriver.Options{
-		ProjectID:         "snowcloud-01",
-		MonitoredResource: monitoredresource.Autodetect(),
-	})
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Register so that views are exported.
-	view.RegisterExporter(exporter)
-	view.SetReportingPeriod(60 * time.Second)
-
-	return exporter
-}
-
 func main() {
 	flag.Parse()
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	if *enableMetrics {
-		exporter := enableStackdriverIntegration()
-		defer exporter.Flush()
-	}
-
-	feServer, err := server.NewServer(*addr)
+	// jaeger tracer
+	closer, err := enableTracer()
 	if err != nil {
 		log.Fatal(err)
 	}
-	feServer.RegisterHandlers()
+	defer closer.Close()
+
+	feServer, err := server.NewServer()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	go func() {
-		log.Printf("Staritng http server on %v", *addr)
-		if err := feServer.Srv.ListenAndServe(); err != nil {
-			log.Fatal(err)
-		}
+		feServer.Run()
 	}()
 
 	c := make(chan os.Signal, 1)
@@ -73,4 +65,49 @@ func main() {
 	defer cancel()
 	feServer.Srv.Shutdown(ctx)
 	os.Exit(0)
+}
+
+func enableTracer() (io.Closer, error) {
+	log.Printf("Enabling OpenTracing tracer...")
+
+	// ambassador uses zipkin
+	zipkinPropagator := zipkin.NewZipkinB3HTTPHeaderPropagator()
+	serviceName := jaegerServiceName
+	jLogger := jaegerlog.StdLogger
+	jMetricsFactory := metrics.NullFactory
+
+	cfg, err := jaegercfg.FromEnv()
+	if err != nil {
+		// parsing errors might happen here, such as when we get a string where we expect a number
+		log.Printf("Could not parse Jaeger env vars: %s", err.Error())
+		return nil, err
+	}
+
+	cfg.Reporter.CollectorEndpoint = jaegerCollectorEndpoint
+	// github.com/DanTulovsky/k8s-configs/configs/jaeger/operator-config.yaml has the config
+	cfg.Sampler = &jaegercfg.SamplerConfig{
+		Type:              jaeger.SamplerTypeRemote,
+		Param:             0, // default sampling if server does not answer
+		SamplingServerURL: jaegerSamplingServerURL,
+	}
+	cfg.RPCMetrics = true
+
+	// Create tracer and then initialize global tracer
+	closer, err := cfg.InitGlobalTracer(
+		serviceName,
+		jaegercfg.Logger(jLogger),
+		jaegercfg.Metrics(jMetricsFactory),
+		// jaegercfg.Injector(opentracing.HTTPHeaders, zipkinPropagator),
+		// upstream from ambassador is in zipkin format
+		jaegercfg.Extractor(opentracing.HTTPHeaders, zipkinPropagator),
+		jaegercfg.ZipkinSharedRPCSpan(true),
+		// jaegercfg.Ta
+	)
+
+	if err != nil {
+		log.Printf("Could not initialize jaeger tracer: %s", err.Error())
+		return nil, err
+	}
+
+	return closer, nil
 }
