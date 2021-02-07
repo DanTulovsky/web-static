@@ -172,7 +172,7 @@ func (s *Server) RegisterHandlers() {
 
 	// dusselskolk.com
 	r.Host("dusselskolk.com").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "https://dusselskolk.wetsnow.com/", http.StatusMovedPermanently)
+		http.Redirect(w, r, "https://www.dusselskolk.com/", http.StatusMovedPermanently)
 	})
 	dsHandler := std.Handler("dusselskolk.com", mdlw, tracingHandler{
 		handler: handlers.CombinedLoggingHandler(
