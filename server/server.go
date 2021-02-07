@@ -178,7 +178,6 @@ type tracingHandler struct {
 
 func (h tracingHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// trace here
-	fmt.Println("start trace")
 	tracer := opentracing.GlobalTracer()
 
 	ectx, err := tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(r.Header))
