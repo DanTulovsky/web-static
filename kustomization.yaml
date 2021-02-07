@@ -1,8 +1,0 @@
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-resources:
-- k8s/20-service.yaml
-- k8s/30-deployment.yaml
-images:
-- name: gcr.io/snowcloud-01/static-web/frontend
-  newTag: d862549965f4b0e4115c931cbef0b70e3ab6d6f2

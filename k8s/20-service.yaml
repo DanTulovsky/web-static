@@ -7,15 +7,17 @@ metadata:
     app: "static-web"
     component: frontend
     tier: production
+    service: static-web-frontend
 spec:
   ports:
     - port: 8080
-      name: http-web
+      name: http
       protocol: TCP
-      targetPort: 8080
+      targetPort: http
   selector:
     app: static-web
     component: frontend
     tier: production
   sessionAffinity: None # or ClientIP
   type: ClusterIP
+  clusterIP: None # headless service

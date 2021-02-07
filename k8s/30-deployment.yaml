@@ -21,7 +21,7 @@ spec:
         app: static-web
         component: frontend
         tier: production
-        version: "2020020600"
+        # version: "2020020600"
     spec:
       containers:
         - name: frontend
@@ -42,6 +42,7 @@ spec:
               memory: "20M"
           ports:
             - containerPort: 8080
+              name: http
           livenessProbe:
             httpGet:
               path: /healthz

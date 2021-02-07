@@ -18,6 +18,9 @@ import (
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	metrics "github.com/slok/go-http-metrics/metrics/prometheus"
+	"github.com/slok/go-http-metrics/middleware"
+	"github.com/slok/go-http-metrics/middleware/std"
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/plugin/ochttp/propagation/b3"
 )
@@ -57,9 +60,6 @@ type Server struct {
 func NewServer() (*Server, error) {
 
 	router := mux.NewRouter()
-	och := &ochttp.Handler{
-		Handler: http.Handler(router),
-	}
 
 	// Now use the logger with your http.Server:
 	logger := log.New(debugLogger{}, "", 0)
@@ -67,7 +67,7 @@ func NewServer() (*Server, error) {
 	return &Server{
 		Srv: &http.Server{
 			Handler: &ochttp.Handler{
-				Handler:     och,
+				Handler:     router,
 				Propagation: &b3.HTTPFormat{},
 			},
 			Addr:         *addr,
@@ -127,12 +127,19 @@ func (s *Server) startPprof() error {
 // RegisterHandlers registers http handlers
 func (s *Server) RegisterHandlers() {
 
+	mdlw := middleware.New(middleware.Config{
+		Recorder: metrics.NewRecorder(metrics.Config{}),
+		Service:  "web-static",
+	})
+
 	r := s.router
+	r.Use(std.HandlerProvider("default", mdlw))
 
 	logFile := enableLogging()
 
 	// Prometheus metrics
-	r.Handle("/metrics", handlers.CombinedLoggingHandler(logFile, promhttp.Handler()))
+	r.Handle("/metrics", std.Handler("/metrics", mdlw,
+		handlers.CombinedLoggingHandler(logFile, promhttp.Handler())))
 
 	// Health Checks used by kubernetes
 	r.HandleFunc("/healthz", HandleHealthz)
@@ -142,15 +149,25 @@ func (s *Server) RegisterHandlers() {
 	r.Host("wetsnow.com").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "https://www.wetsnow.com/", http.StatusMovedPermanently)
 	})
-	r.Host("{subdomain:[a-z]*}.wetsnow.com").Handler(tracingHandler{handler: handlers.CombinedLoggingHandler(logFile,
-		http.FileServer(http.Dir(fmt.Sprintf(path.Join(*dataDir, "wetsnow.com")))))})
+	wsHandler := std.Handler("wetsnow.com", mdlw, tracingHandler{
+		handler: handlers.CombinedLoggingHandler(
+			logFile,
+			http.FileServer(http.Dir(fmt.Sprintf(path.Join(*dataDir, "wetsnow.com"))))),
+	})
+	r.Host("{subdomain:[a-z]*}.wetsnow.com").Handler(wsHandler)
 
 	// galinasbeautyroom.com
 	r.Host("galinasbeautyroom.com").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "https://www.galinasbeautyroom.com/", http.StatusMovedPermanently)
 	})
-	r.Host("{subdomain:[a-z]*}.galinasbeautyroom.com").Handler(tracingHandler{handler: handlers.CombinedLoggingHandler(logFile,
-		http.FileServer(http.Dir(fmt.Sprintf(path.Join(*dataDir, "galinasbeautyroom.com")))))})
+	gsbHandler := std.Handler("galinasbeautyroom.com", mdlw,
+		tracingHandler{
+			handler: handlers.CombinedLoggingHandler(
+				logFile,
+				http.FileServer(http.Dir(fmt.Sprintf(path.Join(*dataDir, "galinasbeautyroom.com"))))),
+		})
+
+	r.Host("{subdomain:[a-z]*}.galinasbeautyroom.com").Handler(gsbHandler)
 
 	// Root
 	rh := &RootHandler{}
