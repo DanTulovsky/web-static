@@ -25,11 +25,12 @@ import (
 // gcr.io/snowcloud-01/static-web/frontend:YYYYMMDD00
 
 var (
-	enableLogs = flag.Bool("enable_logging", true, "Set to enable logging.")
-	logDir     = flag.String("log_dir", "", "Top level directory for log files, if empty (and enable_logging) logs to stdout")
-	dataDir    = flag.String("data_dir", "data/hosts", "Top level directory for site files.")
-	pprofPort  = flag.String("pprof_port", "6060", "port for pprof")
-	addr       = flag.String("listen-address", ":8080", "The address to listen on for HTTP requests.")
+	enableLogs    = flag.Bool("enable_logging", true, "Set to enable logging.")
+	enableTracing = flag.Bool("enable_tracing", false, "Set to true to enable tracing to jaeger.")
+	logDir        = flag.String("log_dir", "", "Top level directory for log files, if empty (and enable_logging) logs to stdout")
+	dataDir       = flag.String("data_dir", "data/hosts", "Top level directory for site files.")
+	pprofPort     = flag.String("pprof_port", "6060", "port for pprof")
+	addr          = flag.String("listen-address", ":8080", "The address to listen on for HTTP requests.")
 )
 
 // RootHandler handles requests
@@ -176,29 +177,35 @@ type tracingHandler struct {
 	handler http.Handler
 }
 
-func (h tracingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// trace here
-	tracer := opentracing.GlobalTracer()
+func (h tracingHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	if *enableTracing {
+		// trace here
+		tracer := opentracing.GlobalTracer()
 
-	ectx, err := tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(r.Header))
-	if err != nil {
-		log.Println(err)
+		var span opentracing.Span
+
+		ectx, err := tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(req.Header))
+		if err != nil {
+			log.Println(err)
+			span = opentracing.StartSpan("/")
+		} else {
+
+			span = opentracing.StartSpan("/", ext.RPCServerOption(ectx))
+		}
+
+		span.SetTag("user_agent", req.UserAgent())
+		ext.SpanKindRPCServer.Set(span)
+		ext.HTTPMethod.Set(span, req.Method)
+		// ext.HTTPStatusCode.Set(span, uint16(r.))
+		ext.HTTPUrl.Set(span, req.RequestURI)
+		span.SetTag("host", req.Host)
+
+		defer span.Finish()
 	}
-
-	span := opentracing.StartSpan("/", ext.RPCServerOption(ectx))
-	span.SetTag("user_agent", r.UserAgent())
-	ext.SpanKindRPCServer.Set(span)
-	ext.HTTPMethod.Set(span, r.Method)
-	ext.HTTPStatusCode.Set(span, uint16(r.Response.StatusCode))
-	ext.HTTPUrl.Set(span, r.RequestURI)
-	span.SetTag("host", r.Host)
-
-	defer span.Finish()
 
 	// call real handler
-	h.handler.ServeHTTP(w, r)
-	if r.MultipartForm != nil {
-		r.MultipartForm.RemoveAll()
+	h.handler.ServeHTTP(w, req)
+	if req.MultipartForm != nil {
+		req.MultipartForm.RemoveAll()
 	}
-
 }
