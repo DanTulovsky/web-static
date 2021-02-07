@@ -21,8 +21,6 @@ import (
 	metrics "github.com/slok/go-http-metrics/metrics/prometheus"
 	"github.com/slok/go-http-metrics/middleware"
 	"github.com/slok/go-http-metrics/middleware/std"
-	"go.opencensus.io/plugin/ochttp"
-	"go.opencensus.io/plugin/ochttp/propagation/b3"
 )
 
 // gcr.io/snowcloud-01/static-web/frontend:YYYYMMDD00
@@ -52,31 +50,22 @@ func (d debugLogger) Write(p []byte) (n int, err error) {
 
 // Server is the frontend server
 type Server struct {
-	Srv    *http.Server
-	router *mux.Router
+	Srv *http.Server
 }
 
 // NewServer returns a server
 func NewServer() (*Server, error) {
-
-	router := mux.NewRouter()
-
 	// Now use the logger with your http.Server:
 	logger := log.New(debugLogger{}, "", 0)
 
 	return &Server{
 		Srv: &http.Server{
-			Handler: &ochttp.Handler{
-				Handler:     router,
-				Propagation: &b3.HTTPFormat{},
-			},
 			Addr:         *addr,
 			WriteTimeout: 15 * time.Second,
 			ReadTimeout:  15 * time.Second,
 			IdleTimeout:  time.Second * 60,
 			ErrorLog:     logger,
 		},
-		router: router,
 	}, nil
 }
 
@@ -126,17 +115,23 @@ func (s *Server) startPprof() error {
 
 // RegisterHandlers registers http handlers
 func (s *Server) RegisterHandlers() {
+	logFile := enableLogging()
 
+	r := mux.NewRouter()
+	s.Srv.Handler = r
+
+	// metrics (todo: replace with open-telemetry)
 	mdlw := middleware.New(middleware.Config{
 		Recorder:      metrics.NewRecorder(metrics.Config{}),
 		Service:       "web-static",
 		GroupedStatus: true,
 	})
 
-	r := s.router
-	r.Use(std.HandlerProvider("default", mdlw))
+	// opentracing
+	tHandler := &tracingHandler{}
 
-	logFile := enableLogging()
+	r.Use(std.HandlerProvider("default", mdlw))
+	r.Use(tHandler.Middleware)
 
 	// Prometheus metrics
 	r.Handle("/metrics", std.Handler("/metrics", mdlw,
@@ -150,11 +145,10 @@ func (s *Server) RegisterHandlers() {
 	r.Host("wetsnow.com").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "https://www.wetsnow.com/", http.StatusMovedPermanently)
 	})
-	wsHandler := std.Handler("wetsnow.com", mdlw, tracingHandler{
-		handler: handlers.CombinedLoggingHandler(
-			logFile,
-			http.FileServer(http.Dir(fmt.Sprintf(path.Join(*dataDir, "wetsnow.com"))))),
-	})
+	wsHandler := std.Handler("wetsnow.com", mdlw,
+		handlers.CombinedLoggingHandler(logFile,
+			http.FileServer(http.Dir(path.Join(*dataDir, "wetsnow.com")))),
+	)
 	r.Host("{subdomain:[a-z]*}.wetsnow.com").Handler(wsHandler)
 
 	// galinasbeautyroom.com
@@ -162,33 +156,27 @@ func (s *Server) RegisterHandlers() {
 		http.Redirect(w, r, "https://www.galinasbeautyroom.com/", http.StatusMovedPermanently)
 	})
 	gsbHandler := std.Handler("galinasbeautyroom.com", mdlw,
-		tracingHandler{
-			handler: handlers.CombinedLoggingHandler(
-				logFile,
-				http.FileServer(http.Dir(fmt.Sprintf(path.Join(*dataDir, "galinasbeautyroom.com"))))),
-		})
-
+		handlers.CombinedLoggingHandler(logFile,
+			http.FileServer(http.Dir(path.Join(*dataDir, "galinasbeautyroom.com")))),
+	)
 	r.Host("{subdomain:[a-z]*}.galinasbeautyroom.com").Handler(gsbHandler)
 
 	// dusselskolk.com
 	r.Host("dusselskolk.com").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "https://www.dusselskolk.com/", http.StatusMovedPermanently)
 	})
-	dsHandler := std.Handler("dusselskolk.com", mdlw, tracingHandler{
-		handler: handlers.CombinedLoggingHandler(
-			logFile,
-			http.FileServer(http.Dir(fmt.Sprintf(path.Join(*dataDir, "dusselskolk.com"))))),
-	})
+	dsHandler := std.Handler("dusselskolk.com", mdlw,
+		handlers.CombinedLoggingHandler(logFile,
+			http.FileServer(http.Dir(path.Join(*dataDir, "dusselskolk.com")))),
+	)
 	r.Host("{subdomain:[a-z]*}.dusselskolk.com").Handler(dsHandler)
 
 	// Root
-	rh := &RootHandler{}
-	r.PathPrefix("/").Handler(
-		tracingHandler{handler: handlers.CombinedLoggingHandler(logFile, ochttp.WithRouteTag(rh, "/"))})
+	r.PathPrefix("/").Handler(handlers.CombinedLoggingHandler(logFile, &RootHandler{}))
 }
 
 func (h RootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "nothing here\n")
+	fmt.Fprint(w, "nothing here?\n")
 }
 
 // HandleHealthz handles health checks.
@@ -203,10 +191,18 @@ func HandleServez(w http.ResponseWriter, r *http.Request) {
 
 // tracingHandler calls handler and traces the execution
 type tracingHandler struct {
-	handler http.Handler
 }
 
-func (h tracingHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+// Middleware implements the Gorilla MUX middleware interface
+func (h *tracingHandler) Middleware(next http.Handler) http.Handler {
+
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		h.traceRequest(w, req)
+		next.ServeHTTP(w, req)
+	})
+}
+
+func (h *tracingHandler) traceRequest(w http.ResponseWriter, req *http.Request) {
 	if *enableTracing {
 		// trace here
 		tracer := opentracing.GlobalTracer()
@@ -230,11 +226,5 @@ func (h tracingHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		span.SetTag("host", req.Host)
 
 		defer span.Finish()
-	}
-
-	// call real handler
-	h.handler.ServeHTTP(w, req)
-	if req.MultipartForm != nil {
-		req.MultipartForm.RemoveAll()
 	}
 }
