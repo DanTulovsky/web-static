@@ -128,8 +128,9 @@ func (s *Server) startPprof() error {
 func (s *Server) RegisterHandlers() {
 
 	mdlw := middleware.New(middleware.Config{
-		Recorder: metrics.NewRecorder(metrics.Config{}),
-		Service:  "web-static",
+		Recorder:      metrics.NewRecorder(metrics.Config{}),
+		Service:       "web-static",
+		GroupedStatus: true,
 	})
 
 	r := s.router
