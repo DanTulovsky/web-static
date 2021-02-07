@@ -170,6 +170,17 @@ func (s *Server) RegisterHandlers() {
 
 	r.Host("{subdomain:[a-z]*}.galinasbeautyroom.com").Handler(gsbHandler)
 
+	// dusselskolk.com
+	r.Host("dusselskolk.com").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "https://dusselskolk.wetsnow.com/", http.StatusMovedPermanently)
+	})
+	dsHandler := std.Handler("dusselskolk.com", mdlw, tracingHandler{
+		handler: handlers.CombinedLoggingHandler(
+			logFile,
+			http.FileServer(http.Dir(fmt.Sprintf(path.Join(*dataDir, "dusselskolk.com"))))),
+	})
+	r.Host("{subdomain:[a-z]*}.dusselskolk.com").Handler(dsHandler)
+
 	// Root
 	rh := &RootHandler{}
 	r.PathPrefix("/").Handler(
