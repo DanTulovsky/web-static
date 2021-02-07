@@ -187,6 +187,11 @@ func (h tracingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	span := opentracing.StartSpan("/", ext.RPCServerOption(ectx))
 	span.SetTag("user_agent", r.UserAgent())
+	ext.SpanKindRPCServer.Set(span)
+	ext.HTTPMethod.Set(span, r.Method)
+	ext.HTTPStatusCode.Set(span, uint16(r.Response.StatusCode))
+	ext.HTTPUrl.Set(span, r.RequestURI)
+	span.SetTag("host", r.Host)
 
 	defer span.Finish()
 
