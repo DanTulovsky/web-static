@@ -204,7 +204,6 @@ func (h *tracingHandler) Middleware(next http.Handler) http.Handler {
 
 func (h *tracingHandler) traceRequest(w http.ResponseWriter, req *http.Request) {
 	if *enableTracing {
-		// trace here
 		tracer := opentracing.GlobalTracer()
 
 		var span opentracing.Span
