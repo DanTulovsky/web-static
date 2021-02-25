@@ -141,20 +141,21 @@ func (s *Server) RegisterHandlers() {
 	r.HandleFunc("/healthz", HandleHealthz)
 	r.HandleFunc("/servez", HandleServez)
 
-	// wetsnow.com
+	// wetsnow.com redirect
 	r.Host("wetsnow.com").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "https://www.wetsnow.com/", http.StatusMovedPermanently)
 	})
+
+	// wetsnow.com/kafka
+	kfkHandler := std.Handler("wetsnow.com", mdlw, handlers.CombinedLoggingHandler(logFile, &kafkaHandler{}))
+	r.Host("www.wetsnow.com").PathPrefix("/kafka").Handler(kfkHandler)
+
+	// wetsnow.com
 	wsHandler := std.Handler("wetsnow.com", mdlw,
 		handlers.CombinedLoggingHandler(logFile,
 			http.FileServer(http.Dir(path.Join(*dataDir, "wetsnow.com")))),
 	)
 	r.Host("{subdomain:[a-z]*}.wetsnow.com").Handler(wsHandler)
-
-	kfkHandler := std.Handler("wetsnow.com", mdlw, handlers.CombinedLoggingHandler(logFile, &kafkaHandler{}))
-
-	// wetsnow.com/kafka
-	r.Host("www.wetsnow.com").PathPrefix("/kafka/").Handler(kfkHandler)
 
 	// galinasbeautyroom.com
 	r.Host("galinasbeautyroom.com").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
