@@ -121,7 +121,9 @@ func (s *Server) kafkaSubscribe(kafkaQueue goconcurrentqueue.Queue) {
 		msg, err := c.ReadMessage(-1)
 		if err == nil {
 			// add to queue
-			kafkaQueue.Enqueue(string(msg.Value))
+			if err := kafkaQueue.Enqueue(string(msg.Value)); err != nil {
+				log.Printf("queue error: %v", err)
+			}
 			// fmt.Printf("Message on %s: %s\n", msg.TopicPartition, string(msg.Value))
 		} else {
 			fmt.Printf("err talking to kafka: %v", err)
