@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/enriquebris/goconcurrentqueue"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/opentracing/opentracing-go"
@@ -24,6 +25,10 @@ import (
 )
 
 // gcr.io/snowcloud-01/static-web/frontend:YYYYMMDD00
+
+const (
+	kafkaQueueMaxSize = 10
+)
 
 var (
 	enableLogs    = flag.Bool("enable_logging", true, "Set to enable logging.")
@@ -95,12 +100,33 @@ func enableLogging() io.Writer {
 
 // Run runs the server
 func (s *Server) Run() error {
-	s.RegisterHandlers()
+
+	kafkaQueue := goconcurrentqueue.NewFixedFIFO(kafkaQueueMaxSize)
+
+	s.RegisterHandlers(kafkaQueue)
 
 	go s.startPprof()
+	go s.kafkaSubscribe(kafkaQueue)
 
 	log.Printf("Staritng http server on %v", *addr)
 	return s.Srv.ListenAndServe()
+}
+
+func (s *Server) kafkaSubscribe(kafkaQueue goconcurrentqueue.Queue) {
+	log.Println("Starting kafka consumer...")
+	c := newKafkaConsumer()
+	defer c.Close()
+
+	for {
+		msg, err := c.ReadMessage(-1)
+		if err == nil {
+			// add to queue
+			kafkaQueue.Enqueue(string(msg.Value))
+			// fmt.Printf("Message on %s: %s\n", msg.TopicPartition, string(msg.Value))
+		} else {
+			fmt.Printf("err talking to kafka: %v", err)
+		}
+	}
 }
 
 func (s *Server) startPprof() error {
@@ -114,7 +140,7 @@ func (s *Server) startPprof() error {
 }
 
 // RegisterHandlers registers http handlers
-func (s *Server) RegisterHandlers() {
+func (s *Server) RegisterHandlers(kafkaQueue goconcurrentqueue.Queue) {
 	logFile := enableLogging()
 
 	r := mux.NewRouter()
@@ -147,7 +173,7 @@ func (s *Server) RegisterHandlers() {
 	})
 
 	// wetsnow.com/kafka
-	kfkHandler := std.Handler("wetsnow.com", mdlw, handlers.CombinedLoggingHandler(logFile, newKafkaHandler()))
+	kfkHandler := std.Handler("wetsnow.com", mdlw, handlers.CombinedLoggingHandler(logFile, newKafkaHandler(kafkaQueue)))
 	r.Host("www.wetsnow.com").PathPrefix("/kafka").Handler(kfkHandler)
 
 	// wetsnow.com
