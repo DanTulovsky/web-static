@@ -147,7 +147,7 @@ func (s *Server) RegisterHandlers() {
 	})
 
 	// wetsnow.com/kafka
-	kfkHandler := std.Handler("wetsnow.com", mdlw, handlers.CombinedLoggingHandler(logFile, &kafkaHandler{}))
+	kfkHandler := std.Handler("wetsnow.com", mdlw, handlers.CombinedLoggingHandler(logFile, newKafkaHandler()))
 	r.Host("www.wetsnow.com").PathPrefix("/kafka").Handler(kfkHandler)
 
 	// wetsnow.com
