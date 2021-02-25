@@ -44,7 +44,8 @@ func newKafkaConsumer() *kafka.Consumer {
 }
 
 func (kh *kafkaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "kafka")
+	w.Header().Add("Content-Type", "text/html")
+	fmt.Fprintln(w, "<p>kafka</p>")
 
 	value, err := kh.kafkaQueue.Dequeue()
 	if err != nil {
