@@ -244,7 +244,6 @@ func (h *tracingHandler) traceRequest(w http.ResponseWriter, req *http.Request) 
 
 		ectx, err := tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(req.Header))
 		if err != nil {
-			log.Println(err)
 			span = opentracing.StartSpan("/")
 		} else {
 

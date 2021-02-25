@@ -54,7 +54,6 @@ func (kh *kafkaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, "<p>kafka -> [len after: %v]</p>\n", kh.kafkaQueue.GetLen())
-
 	fmt.Fprintf(w, "%v\n", value.(string))
+	fmt.Fprintf(w, "<p>kafka -> [len after: %v]</p>\n", kh.kafkaQueue.GetLen())
 }
