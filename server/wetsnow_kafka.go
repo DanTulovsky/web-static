@@ -45,7 +45,8 @@ func newKafkaConsumer() *kafka.Consumer {
 
 func (kh *kafkaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "text/html")
-	fmt.Fprintln(w, "<p>kafka</p>")
+
+	fmt.Fprintf(w, "<p>kafka -> [len: %v]</p>\n", kh.kafkaQueue.GetLen())
 
 	value, err := kh.kafkaQueue.Dequeue()
 	if err != nil {
