@@ -18,6 +18,7 @@ type kafkaHandler struct {
 	consumer *kafka.Consumer
 }
 
+// newKafkaHandler returns a new kafka handler
 func newKafkaHandler() *kafkaHandler {
 
 	c, err := kafka.NewConsumer(&kafka.ConfigMap{
