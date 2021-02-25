@@ -3,7 +3,6 @@ package server
 import (
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 )
@@ -41,10 +40,33 @@ func newKafkaHandler() *kafkaHandler {
 func (kh *kafkaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "kafka")
 
-	msg, err := kh.consumer.ReadMessage(time.Millisecond * 10)
-	if err == nil {
-		fmt.Fprintf(w, "Message on %s: %s\n", msg.TopicPartition, string(msg.Value))
-	} else {
-		fmt.Fprintf(w, "err talking to kafka: %v", err)
+	ev := kh.consumer.Poll(100)
+	if ev == nil {
+		fmt.Fprintln(w, "got nothing...")
+		return
 	}
+
+	switch e := ev.(type) {
+	case *kafka.Message:
+		fmt.Fprintf(w, "%% Message on %s:\n%s\n",
+			e.TopicPartition, string(e.Value))
+		if e.Headers != nil {
+			fmt.Fprintf(w, "%% Headers: %v\n", e.Headers)
+		}
+	case kafka.Error:
+		// Errors should generally be considered
+		// informational, the client will try to
+		// automatically recover.
+		// But in this example we choose to terminate
+		// the application if all brokers are down.
+		fmt.Fprintf(w, "%% Error: %v: %v\n", e.Code(), e)
+	default:
+	}
+
+	// msg, err := kh.consumer.ReadMessage(time.Millisecond * 10)
+	// if err == nil {
+	// 	fmt.Fprintf(w, "Message on %s: %s\n", msg.TopicPartition, string(msg.Value))
+	// } else {
+	// 	fmt.Fprintf(w, "err talking to kafka: %v", err)
+	// }
 }
