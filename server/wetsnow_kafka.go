@@ -10,7 +10,7 @@ import (
 
 const (
 	kafkaBroker = "kafka0-headless.kafka:9092"
-	kafkaGroup  = "web1"
+	kafkaGroup  = ""
 	kafkaTopic  = "otlp_spans"
 )
 
