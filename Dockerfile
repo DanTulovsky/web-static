@@ -4,7 +4,7 @@
 FROM golang:alpine AS builder
 
 # install git and ca certs for debugger
-RUN apk update && apk add --no-cache git ca-certificates build-essential
+RUN apk update && apk add --no-cache git ca-certificates make build-base
 
 COPY . $GOPATH/src/github.com/DanTulovsky/web-static
 WORKDIR $GOPATH/src/github.com/DanTulovsky/web-static
@@ -16,8 +16,8 @@ RUN go get -d -v
 
 # optimized binary
 # RUN GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o /go/bin/run
-RUN go build -o /go/bin/run
-RUN go install -v
+RUN go build -tags musl -o /go/bin/run
+RUN go install -tags musl -v
 
 # final stage
 FROM alpine:latest
