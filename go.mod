@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	github.com/HdrHistogram/hdrhistogram-go v1.0.1 // indirect
+	github.com/census-instrumentation/opencensus-proto v0.3.0 // indirect
 	github.com/confluentinc/confluent-kafka-go v1.5.2
 	github.com/enriquebris/goconcurrentqueue v0.6.0
 	github.com/google/go-cmp v0.5.4 // indirect
