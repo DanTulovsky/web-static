@@ -7,6 +7,7 @@ require (
 	github.com/confluentinc/confluent-kafka-go v1.5.2
 	github.com/enriquebris/goconcurrentqueue v0.6.0
 	github.com/google/go-cmp v0.5.4 // indirect
+	github.com/google/uuid v1.0.0
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
 	github.com/opentracing/opentracing-go v1.2.0

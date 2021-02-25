@@ -6,12 +6,16 @@ import (
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/enriquebris/goconcurrentqueue"
+	"github.com/google/uuid"
 )
 
 const (
 	kafkaBroker = "kafka0-headless.kafka:9092"
-	kafkaGroup  = ""
 	kafkaTopic  = "otlp_spans"
+)
+
+var (
+	kafkaGroup = uuid.New().String()
 )
 
 type kafkaHandler struct {
