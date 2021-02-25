@@ -151,6 +151,11 @@ func (s *Server) RegisterHandlers() {
 	)
 	r.Host("{subdomain:[a-z]*}.wetsnow.com").Handler(wsHandler)
 
+	kfkHandler := std.Handler("wetsnow.com", mdlw, handlers.CombinedLoggingHandler(logFile, &kafkaHandler{}))
+
+	// wetsnow.com/kafka
+	r.Host("www.wetsnow.com").PathPrefix("/kafka/").Handler(kfkHandler)
+
 	// galinasbeautyroom.com
 	r.Host("galinasbeautyroom.com").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "https://www.galinasbeautyroom.com/", http.StatusMovedPermanently)
