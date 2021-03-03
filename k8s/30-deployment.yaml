@@ -4,7 +4,7 @@ metadata:
   name: frontend
   namespace: web
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: static-web
@@ -12,9 +12,9 @@ spec:
       tier: production
   strategy:
     type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 25%
-      maxUnavailable: 25%
+    # rollingUpdate:
+    #   maxSurge: 25%
+    #   maxUnavailable: 25%
   template:
     metadata:
       labels:
@@ -35,11 +35,11 @@ spec:
             ]
           resources:
             limits:
-              cpu: "1.0"
-              memory: "200M"
+              cpu: "0.1"
+              memory: "20Mi"
             requests:
-              cpu: "0.02"
-              memory: "20M"
+              cpu: "0.1"
+              memory: "20Mi"
           ports:
             - containerPort: 8080
               name: http
