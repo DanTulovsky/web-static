@@ -24,7 +24,7 @@ const (
 
 var (
 	kafkaGroup  = uuid.New().String()
-	kafkaBroker = flag.String("kafka_broker", "kakfka0.kafka:9092", "kafka broker")
+	kafkaBroker = flag.String("kafka_broker", "kafka0.kafka:9092", "kafka broker")
 )
 
 type kafkaHandler struct {
