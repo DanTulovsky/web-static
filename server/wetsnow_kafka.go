@@ -13,9 +13,7 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/enriquebris/goconcurrentqueue"
 	"github.com/google/uuid"
-
 	// tracepb "go.opentelemetry.io/proto/otlp/trace/v1"
-	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -69,13 +67,13 @@ func (kh *kafkaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Fprintf(w, "%v\n", value.(string))
 
-	valueString := value.(string)
+	// valueString := value.(string)
 
-	event := &tracepb.ExportTraceServiceRequest{}
-	if err := proto.Unmarshal([]byte(valueString), event); err != nil {
-		fmt.Fprintf(w, "unmarshal error: %v", err)
-		return
-	}
+	// event := &tracepb.ExportTraceServiceRequest{}
+	// if err := proto.Unmarshal([]byte(valueString), event); err != nil {
+	// 	fmt.Fprintf(w, "unmarshal error: %v", err)
+	// 	return
+	// }
 
 	fmt.Fprintf(w, "<p>kafka -> [len after: %v]</p>\n", kh.kafkaQueue.GetLen())
 }
