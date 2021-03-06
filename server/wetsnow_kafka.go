@@ -1,6 +1,12 @@
 package server
 
+// TODO: #1 Become a free consumer and subscribe to all partitions in the topic
+// Partitions may be manually assigned to free consumers. If necessary, an entire
+// topic may be assigned to a single free consumer — this is done by individually
+// assigning all partitions. (Consumer 1 can be freely assigned any partition.)
+
 import (
+	"flag"
 	"fmt"
 	"net/http"
 
@@ -13,12 +19,12 @@ import (
 )
 
 const (
-	kafkaBroker = "kafka0-headless.kafka:9092"
-	kafkaTopic  = "otlp_spans"
+	kafkaTopic = "otlp_spans"
 )
 
 var (
-	kafkaGroup = uuid.New().String()
+	kafkaGroup  = uuid.New().String()
+	kafkaBroker = flag.String("kafka_broker", "kakfka0.kafka:9092", "kafka broker")
 )
 
 type kafkaHandler struct {
@@ -36,7 +42,7 @@ func newKafkaHandler(q goconcurrentqueue.Queue) *kafkaHandler {
 func newKafkaConsumer() *kafka.Consumer {
 
 	c, err := kafka.NewConsumer(&kafka.ConfigMap{
-		"bootstrap.servers": kafkaBroker,
+		"bootstrap.servers": *kafkaBroker,
 		"group.id":          kafkaGroup,
 		"auto.offset.reset": "earliest",
 	})
