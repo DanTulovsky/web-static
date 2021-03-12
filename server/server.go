@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/http/httputil"
 	"os"
 	"path"
 	"runtime/debug"
@@ -169,6 +170,7 @@ func (s *Server) RegisterHandlers(kafkaQueue goconcurrentqueue.Queue) {
 	// Health Checks used by kubernetes
 	r.HandleFunc("/healthz", HandleHealthz)
 	r.HandleFunc("/servez", HandleServez)
+	r.HandleFunc("/env", HandleEnv)
 
 	// wetsnow.com redirect
 	r.Host("wetsnow.com").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -222,6 +224,18 @@ func HandleHealthz(w http.ResponseWriter, r *http.Request) {
 // HandleServez handles ready to server checks.
 func HandleServez(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "ok")
+}
+
+// HandleEnv reports back on request headers
+func HandleEnv(w http.ResponseWriter, r *http.Request) {
+	requestDump, err := httputil.DumpRequest(r, true)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Fprintln(w, "<pre>")
+	fmt.Fprintf(w, string(requestDump))
+	fmt.Fprintln(w, "</pre>")
 }
 
 // tracingHandler calls handler and traces the execution
