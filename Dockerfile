@@ -21,7 +21,7 @@ RUN go install -tags musl -v
 
 # final stage
 FROM alpine:latest
-RUN apk --no-cache add ca-certificates bash
+RUN apk --no-cache add ca-certificates bash curl
 COPY --from=builder /go/bin/run /go/bin/run
 COPY --from=builder /go/src/github.com/DanTulovsky/web-static/data /data/
 
