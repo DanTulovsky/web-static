@@ -37,6 +37,7 @@ var (
 	dataDir       = flag.String("data_dir", "data/hosts", "Top level directory for site files.")
 	pprofPort     = flag.String("pprof_port", "6060", "port for pprof")
 	addr          = flag.String("listen-address", ":8080", "The address to listen on for HTTP requests.")
+	version       = flag.String("version", "", "version")
 )
 
 // RootHandler handles requests
@@ -251,6 +252,7 @@ func (h *tracingHandler) traceRequest(w http.ResponseWriter, req *http.Request) 
 		}
 
 		span.SetTag("user_agent", req.UserAgent())
+		span.SetTag("service.version", *version)
 		ext.SpanKindRPCServer.Set(span)
 		ext.HTTPMethod.Set(span, req.Method)
 		// ext.HTTPStatusCode.Set(span, uint16(r.))

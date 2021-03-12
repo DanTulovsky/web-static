@@ -74,19 +74,19 @@ jobs:
           docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
           docker push $IMAGE_ID:$VERSION
 
-      - name: Install doctl
-        uses: digitalocean/action-doctl@v2
-        with:
-          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+      # - name: Install doctl
+      #   uses: digitalocean/action-doctl@v2
+      #   with:
+      #     token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
-      - name: Save DigitalOcean kubeconfig with short-lived credentials
-        run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 cluster-1
+      # - name: Save DigitalOcean kubeconfig with short-lived credentials
+      #   run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 cluster-1
 
-      - name: Deploy to DigitalOcean Kubernetes
-        run: kubectl --namespace web apply -f $GITHUB_WORKSPACE/k8s/30-deployment.yaml
+      # - name: Deploy to DigitalOcean Kubernetes
+      #   run: kubectl --namespace web apply -f $GITHUB_WORKSPACE/k8s/30-deployment.yaml
 
-      - name: Rolling restart Deployment
-        run: kubectl --namespace web rollout restart deployment/frontend
+      # - name: Rolling restart Deployment
+      #   run: kubectl --namespace web rollout restart deployment/frontend
 
-      - name: Verify deployment
-        run: kubectl --namespace web rollout status deployment/frontend
+      # - name: Verify deployment
+      #   run: kubectl --namespace web rollout status deployment/frontend
