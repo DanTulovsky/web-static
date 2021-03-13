@@ -21,6 +21,7 @@ import (
 	metrics "github.com/slok/go-http-metrics/metrics/prometheus"
 	"github.com/slok/go-http-metrics/middleware"
 	"github.com/slok/go-http-metrics/middleware/std"
+	. "go.opentelemetry.io/otel/semconv"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -258,33 +259,23 @@ func (h *tracingHandler) Middleware(next http.Handler) http.Handler {
 func (h *tracingHandler) traceRequest(w http.ResponseWriter, req *http.Request) {
 
 	ctx := req.Context()
+	// span := trace.SpanFromContext(ctx)
+	// defer span.End()
 
-	_, f := h.tracer.Start(ctx, "/")
-	defer f.End()
-
-	// if *enableTracing {
-	// tracer := opentracing.GlobalTracer()
-	// tracer := otel.Tracer("web-request")
-
-	// var span opentracing.Span
-	// _, span := tracer.Start()
-
-	// // ectx, err := tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(req.Header))
-	// // if err != nil {
-	// // 	span = opentracing.StartSpan("/")
-	// // } else {
-
-	// // 	span = opentracing.StartSpan("/", ext.RPCServerOption(ectx))
-	// // }
-
-	// span.SetTag("user_agent", req.UserAgent())
-	// span.SetTag("service.version", *version)
-	// ext.SpanKindRPCServer.Set(span)
-	// ext.HTTPMethod.Set(span, req.Method)
-	// // ext.HTTPStatusCode.Set(span, uint16(r.))
-	// ext.HTTPUrl.Set(span, req.RequestURI)
-	// span.SetTag("host", req.Host)
-
-	// defer span.Finish()
-	// }
+	_, span := h.tracer.Start(ctx, "/",
+		trace.WithAttributes(
+			// https://pkg.go.dev/go.opentelemetry.io/otel/semconv
+			HTTPMethodKey.String(req.Method),
+			HTTPTargetKey.String(req.URL.Path),
+			HTTPSchemeKey.String(req.Proto),
+			HTTPServerNameKey.String(req.Host),
+			HTTPRequestContentLengthKey.Int64(req.ContentLength),
+			// HTTPFlavorKey.String(req.),
+			HTTPURLKey.String(req.RequestURI),
+			NetPeerIPKey.String(req.RemoteAddr),
+			HTTPStatusCodeKey.Int(200),
+			HTTPUserAgentKey.String(req.UserAgent()),
+		),
+	)
+	defer span.End()
 }
