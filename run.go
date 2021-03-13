@@ -10,19 +10,20 @@ import (
 
 	"github.com/DanTulovsky/web-static/server"
 	"github.com/lightstep/otel-launcher-go/launcher"
+	"go.opentelemetry.io/otel"
 
 	_ "net/http/pprof"
 )
 
 const (
-	jaegerSamplingServerURL = "http://otel-collector.observability:5778/sampling"
-	jaegerCollectorEndpoint = "http://otel-collector.observability:14268/api/traces"
-	otelServiceName         = "web-static"
+	// jaegerSamplingServerURL = "http://otel-collector.observability:5778/sampling"
+	// jaegerCollectorEndpoint = "http://otel-collector.observability:14268/api/traces"
+	otelServiceName = "web-static"
 )
 
 var (
 	gracefulTimeout = flag.Duration("graceful_timeout_sec", 5*time.Second, "duration to wait before shutting down")
-	enableMetrics   = flag.Bool("enable_metrics", false, "Set to enable metrics via lightstep.")
+	enableMetrics   = flag.Bool("enable_metrics", true, "Set to enable metrics via lightstep (requires tracing is enabled).")
 	version         = flag.String("version", "", "version")
 )
 
@@ -31,16 +32,10 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	ls := enableOpenTelemetry()
+	tracer := otel.Tracer("global")
 	defer ls.Shutdown()
 
-	// jaeger tracer
-	// closer, err := enableTracer()
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// defer closer.Close()
-
-	feServer, err := server.NewServer()
+	feServer, err := server.NewServer(tracer)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -66,13 +61,14 @@ func main() {
 }
 
 func enableOpenTelemetry() launcher.Launcher {
+	log.Println("Enabling OpenTelemetry support...")
 	// https://github.com/lightstep/otel-launcher-go
 	ls := launcher.ConfigureOpentelemetry(
 		launcher.WithServiceName(otelServiceName),
 		launcher.WithServiceVersion(*version),
 		// launcher.WithAccessToken("{your_access_token}"),  # in env
 		launcher.WithLogLevel("info"),
-		// launcher.WithPropagators(),
+		launcher.WithPropagators([]string{"b3", "baggage", "tracecontext"}),
 		launcher.WithMetricsEnabled(*enableMetrics),
 	)
 	return ls
