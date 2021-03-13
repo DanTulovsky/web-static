@@ -78,6 +78,7 @@ func NewServer(tracer trace.Tracer) (*Server, error) {
 }
 
 func enableLogging() io.Writer {
+	log.Println("Enabling logging...")
 	var logFile = ioutil.Discard
 
 	if !*enableLogs {
@@ -108,8 +109,9 @@ func (s *Server) Run() error {
 		kafkaQueue := goconcurrentqueue.NewFixedFIFO(kafkaQueueMaxSize)
 		s.RegisterHandlers(kafkaQueue)
 		go s.kafkaSubscribe(kafkaQueue)
+	} else {
+		s.RegisterHandlers(nil)
 	}
-
 	go s.startPprof()
 
 	log.Printf("Staritng http server on %v", *addr)
@@ -181,9 +183,11 @@ func (s *Server) RegisterHandlers(kafkaQueue goconcurrentqueue.Queue) {
 		http.Redirect(w, r, "https://www.wetsnow.com/", http.StatusMovedPermanently)
 	})
 
-	// wetsnow.com/kafka
-	kfkHandler := std.Handler("wetsnow.com", mdlw, handlers.CombinedLoggingHandler(logFile, newKafkaHandler(kafkaQueue)))
-	r.Host("www.wetsnow.com").PathPrefix("/kafka").Handler(kfkHandler)
+	if *enableKafka {
+		// wetsnow.com/kafka
+		kfkHandler := std.Handler("wetsnow.com", mdlw, handlers.CombinedLoggingHandler(logFile, newKafkaHandler(kafkaQueue)))
+		r.Host("www.wetsnow.com").PathPrefix("/kafka").Handler(kfkHandler)
+	}
 
 	// wetsnow.com
 	wsHandler := std.Handler("wetsnow.com", mdlw,
