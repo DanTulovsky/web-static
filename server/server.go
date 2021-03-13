@@ -17,8 +17,6 @@ import (
 	"github.com/enriquebris/goconcurrentqueue"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
-	"github.com/opentracing/opentracing-go"
-	"github.com/opentracing/opentracing-go/ext"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	metrics "github.com/slok/go-http-metrics/metrics/prometheus"
 	"github.com/slok/go-http-metrics/middleware"
@@ -33,12 +31,12 @@ const (
 
 var (
 	enableLogs    = flag.Bool("enable_logging", true, "Set to enable logging.")
-	enableTracing = flag.Bool("enable_tracing", false, "Set to true to enable tracing to jaeger.")
+	enableTracing = flag.Bool("enable_tracing", false, "Set to true to enable tracing to lightstep.")
+	enableKafka   = flag.Bool("enable_kafka", false, "Set to true to enable kafka support")
 	logDir        = flag.String("log_dir", "", "Top level directory for log files, if empty (and enable_logging) logs to stdout")
 	dataDir       = flag.String("data_dir", "data/hosts", "Top level directory for site files.")
 	pprofPort     = flag.String("pprof_port", "6060", "port for pprof")
 	addr          = flag.String("listen-address", ":8080", "The address to listen on for HTTP requests.")
-	version       = flag.String("version", "", "version")
 )
 
 // RootHandler handles requests
@@ -103,12 +101,13 @@ func enableLogging() io.Writer {
 // Run runs the server
 func (s *Server) Run() error {
 
-	kafkaQueue := goconcurrentqueue.NewFixedFIFO(kafkaQueueMaxSize)
-
-	s.RegisterHandlers(kafkaQueue)
+	if *enableKafka {
+		kafkaQueue := goconcurrentqueue.NewFixedFIFO(kafkaQueueMaxSize)
+		s.RegisterHandlers(kafkaQueue)
+		go s.kafkaSubscribe(kafkaQueue)
+	}
 
 	go s.startPprof()
-	go s.kafkaSubscribe(kafkaQueue)
 
 	log.Printf("Staritng http server on %v", *addr)
 	return s.Srv.ListenAndServe()
@@ -253,26 +252,28 @@ func (h *tracingHandler) Middleware(next http.Handler) http.Handler {
 
 func (h *tracingHandler) traceRequest(w http.ResponseWriter, req *http.Request) {
 	if *enableTracing {
-		tracer := opentracing.GlobalTracer()
+		// tracer := opentracing.GlobalTracer()
+		// tracer := otel.Tracer("web-request")
 
-		var span opentracing.Span
+		// var span opentracing.Span
+		// _, span := tracer.Start()
 
-		ectx, err := tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(req.Header))
-		if err != nil {
-			span = opentracing.StartSpan("/")
-		} else {
+		// // ectx, err := tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(req.Header))
+		// // if err != nil {
+		// // 	span = opentracing.StartSpan("/")
+		// // } else {
 
-			span = opentracing.StartSpan("/", ext.RPCServerOption(ectx))
-		}
+		// // 	span = opentracing.StartSpan("/", ext.RPCServerOption(ectx))
+		// // }
 
-		span.SetTag("user_agent", req.UserAgent())
-		span.SetTag("service.version", *version)
-		ext.SpanKindRPCServer.Set(span)
-		ext.HTTPMethod.Set(span, req.Method)
-		// ext.HTTPStatusCode.Set(span, uint16(r.))
-		ext.HTTPUrl.Set(span, req.RequestURI)
-		span.SetTag("host", req.Host)
+		// span.SetTag("user_agent", req.UserAgent())
+		// span.SetTag("service.version", *version)
+		// ext.SpanKindRPCServer.Set(span)
+		// ext.HTTPMethod.Set(span, req.Method)
+		// // ext.HTTPStatusCode.Set(span, uint16(r.))
+		// ext.HTTPUrl.Set(span, req.RequestURI)
+		// span.SetTag("host", req.Host)
 
-		defer span.Finish()
+		// defer span.Finish()
 	}
 }
