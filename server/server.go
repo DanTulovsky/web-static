@@ -261,21 +261,34 @@ func (h *tracingHandler) traceRequest(w http.ResponseWriter, req *http.Request) 
 	ctx := req.Context()
 	// span := trace.SpanFromContext(ctx)
 	// defer span.End()
+	span := trace.SpanFromContext(ctx)
 
-	_, span := h.tracer.Start(ctx, "/",
-		trace.WithAttributes(
-			// https://pkg.go.dev/go.opentelemetry.io/otel/semconv
-			HTTPMethodKey.String(req.Method),
-			HTTPTargetKey.String(req.URL.Path),
-			HTTPSchemeKey.String(req.Proto),
-			HTTPServerNameKey.String(req.Host),
-			HTTPRequestContentLengthKey.Int64(req.ContentLength),
-			// HTTPFlavorKey.String(req.),
-			HTTPURLKey.String(req.RequestURI),
-			NetPeerIPKey.String(req.RemoteAddr),
-			HTTPStatusCodeKey.Int(200),
-			HTTPUserAgentKey.String(req.UserAgent()),
-		),
-	)
+	span.SetAttributes(HTTPMethodKey.String(req.Method))
+	span.SetAttributes(HTTPTargetKey.String(req.URL.Path))
+	span.SetAttributes(HTTPSchemeKey.String(req.URL.Scheme))
+	span.SetAttributes(HTTPFlavorKey.String(req.Proto))
+	span.SetAttributes(HTTPServerNameKey.String(req.Host))
+	span.SetAttributes(HTTPRequestContentLengthKey.Int64(req.ContentLength))
+	span.SetAttributes(HTTPURLKey.String(req.URL.Opaque))
+	span.SetAttributes(NetPeerIPKey.String(req.RemoteAddr))
+	span.SetAttributes(HTTPUserAgentKey.String(req.UserAgent()))
+	span.SetAttributes(HTTPStatusCodeKey.Int(http.StatusOK))
+
+	// _, span := h.tracer.Start(ctx, "/",
+	// 	trace.WithAttributes(
+	// 		// https://pkg.go.dev/go.opentelemetry.io/otel/semconv
+	// 		HTTPMethodKey.String(req.Method),
+	// 		HTTPTargetKey.String(req.URL.Path),
+	// 		HTTPSchemeKey.String(req.URL.Scheme),
+	// 		HTTPFlavorKey.String(req.Proto),
+	// 		HTTPServerNameKey.String(req.Host),
+	// 		HTTPRequestContentLengthKey.Int64(req.ContentLength),
+	// 		// HTTPFlavorKey.String(req.),
+	// 		HTTPURLKey.String(req.URL.Opaque),
+	// 		NetPeerIPKey.String(req.RemoteAddr),
+	// 		HTTPStatusCodeKey.Int(200),
+	// 		HTTPUserAgentKey.String(req.UserAgent()),
+	// 	),
+	// )
 	defer span.End()
 }
