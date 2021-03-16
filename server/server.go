@@ -21,11 +21,11 @@ import (
 	metrics "github.com/slok/go-http-metrics/metrics/prometheus"
 	"github.com/slok/go-http-metrics/middleware"
 	"github.com/slok/go-http-metrics/middleware/std"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
 	. "go.opentelemetry.io/otel/semconv"
 	"go.opentelemetry.io/otel/trace"
 )
-
-// gcr.io/snowcloud-01/static-web/frontend:YYYYMMDD00
 
 const (
 	kafkaQueueMaxSize = 10
@@ -263,9 +263,12 @@ func (h *tracingHandler) Middleware(next http.Handler) http.Handler {
 func (h *tracingHandler) traceRequest(w http.ResponseWriter, req *http.Request) {
 
 	ctx := req.Context()
-	// span := trace.SpanFromContext(ctx)
-	// defer span.End()
-	span := trace.SpanFromContext(ctx)
+	tc := otel.GetTextMapPropagator()
+	ctxNew := tc.Extract(ctx, propagation.HeaderCarrier(req.Header))
+	span := trace.SpanFromContext(ctxNew)
+	defer span.End()
+
+	log.Println(ctxNew)
 
 	span.SetAttributes(HTTPMethodKey.String(req.Method))
 	span.SetAttributes(HTTPTargetKey.String(req.URL.Path))
@@ -294,5 +297,4 @@ func (h *tracingHandler) traceRequest(w http.ResponseWriter, req *http.Request) 
 	// 		HTTPUserAgentKey.String(req.UserAgent()),
 	// 	),
 	// )
-	defer span.End()
 }
