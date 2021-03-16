@@ -264,10 +264,10 @@ func (h *tracingHandler) traceRequest(w http.ResponseWriter, req *http.Request) 
 
 	ctx := req.Context()
 	tc := otel.GetTextMapPropagator()
+	// Extract traceID from the headers
 	ctxNew := tc.Extract(ctx, propagation.HeaderCarrier(req.Header))
 
 	_, span := h.tracer.Start(ctxNew, "/")
-	// spew.Dump(span)
 	defer span.End()
 
 	// log.Println(req.Header)
