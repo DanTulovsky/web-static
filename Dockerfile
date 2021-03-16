@@ -7,6 +7,7 @@ FROM golang:alpine AS builder
 RUN apk update && apk add --no-cache git ca-certificates make build-base
 
 COPY . $GOPATH/src/github.com/DanTulovsky/web-static
+COPY ./mod/otel-launcher-go $GOPATH/src/github.com/lightstep/
 WORKDIR $GOPATH/src/github.com/DanTulovsky/web-static
 
 ADD . /go/src/github.com/DanTulovsky/web-static
