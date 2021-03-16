@@ -69,7 +69,8 @@ func enableOpenTelemetry() launcher.Launcher {
 		launcher.WithServiceVersion(*version),
 		// launcher.WithAccessToken("{your_access_token}"),  # in env
 		launcher.WithLogLevel("info"),
-		launcher.WithPropagators([]string{"b3", "baggage", "tracecontext"}),
+		// launcher.WithPropagators([]string{"b3", "tracecontext"}),
+		launcher.WithPropagators([]string{"b3"}),
 		launcher.WithMetricsEnabled(*enableMetrics),
 	)
 	return ls

@@ -265,10 +265,13 @@ func (h *tracingHandler) traceRequest(w http.ResponseWriter, req *http.Request) 
 	ctx := req.Context()
 	tc := otel.GetTextMapPropagator()
 	ctxNew := tc.Extract(ctx, propagation.HeaderCarrier(req.Header))
-	span := trace.SpanFromContext(ctxNew)
+
+	_, span := h.tracer.Start(ctxNew, "/")
+	// spew.Dump(span)
 	defer span.End()
 
-	// log.Println(ctxNew)
+	// log.Println(req.Header)
+	// log.Print(span.SpanContext().TraceID)
 
 	span.SetAttributes(HTTPMethodKey.String(req.Method))
 	span.SetAttributes(HTTPTargetKey.String(req.URL.Path))
