@@ -268,7 +268,7 @@ func (h *tracingHandler) traceRequest(w http.ResponseWriter, req *http.Request) 
 	span := trace.SpanFromContext(ctxNew)
 	defer span.End()
 
-	log.Println(ctxNew)
+	// log.Println(ctxNew)
 
 	span.SetAttributes(HTTPMethodKey.String(req.Method))
 	span.SetAttributes(HTTPTargetKey.String(req.URL.Path))

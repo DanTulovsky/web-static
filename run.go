@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/DanTulovsky/web-static/server"
+	// go mod edit -replace github.com/lightstep/otel-launcher-go=/Users/dant/go/src/github.com/lightstep/otel-launcher-go
 	"github.com/lightstep/otel-launcher-go/launcher"
 	"go.opentelemetry.io/otel"
 
