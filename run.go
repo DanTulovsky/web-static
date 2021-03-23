@@ -31,6 +31,7 @@ var (
 func main() {
 	flag.Parse()
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	log.Printf("Starting version: %v", *version)
 
 	ls := enableOpenTelemetry()
 	tracer := otel.Tracer("global")
