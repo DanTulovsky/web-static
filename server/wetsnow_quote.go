@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 
 	// "go.opentelemetry.io/contrib/instrumentation/net/http"
@@ -34,11 +33,9 @@ func newQuoteHandler(t trace.Tracer) *quoteHandler {
 
 func (qh *quoteHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
-	// gorrilla mux middleware makes sure the trace is in the context
-	_, span := qh.tracer.Start(req.Context(), "quote-handler")
-	defer span.End()
-
-	log.Println(span.SpanContext().TraceID)
+	// // gorrilla mux middleware makes sure the trace is in the context
+	// _, span := qh.tracer.Start(req.Context(), "quote-handler")
+	// defer span.End()
 
 	w.Header().Add("Content-Type", "text/html")
 
