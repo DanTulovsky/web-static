@@ -17,13 +17,9 @@ import (
 	"github.com/enriquebris/goconcurrentqueue"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	metrics "github.com/slok/go-http-metrics/metrics/prometheus"
-	"github.com/slok/go-http-metrics/middleware"
-	"github.com/slok/go-http-metrics/middleware/std"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/propagation"
-	. "go.opentelemetry.io/otel/semconv"
+
+	// . "go.opentelemetry.io/otel/semconv"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -37,7 +33,7 @@ var (
 	logDir      = flag.String("log_dir", "", "Top level directory for log files, if empty (and enable_logging) logs to stdout")
 	dataDir     = flag.String("data_dir", "data/hosts", "Top level directory for site files.")
 	pprofPort   = flag.String("pprof_port", "6060", "port for pprof")
-	addr        = flag.String("listen-address", ":8080", "The address to listen on for HTTP requests.")
+	addr        = flag.String("http_port", ":8080", "The address to listen on for HTTP requests.")
 )
 
 // RootHandler handles requests
@@ -153,25 +149,7 @@ func (s *Server) RegisterHandlers(kafkaQueue goconcurrentqueue.Queue) {
 
 	r := mux.NewRouter()
 	s.Srv.Handler = r
-
-	// metrics (todo: replace with open-telemetry)
-	mdlw := middleware.New(middleware.Config{
-		Recorder:      metrics.NewRecorder(metrics.Config{}),
-		Service:       "web-static",
-		GroupedStatus: true,
-	})
-
-	// opentracing
-	tHandler := &tracingHandler{
-		tracer: s.tracer,
-	}
-
-	r.Use(std.HandlerProvider("default", mdlw))
-	r.Use(tHandler.Middleware)
-
-	// Prometheus metrics
-	r.Handle("/metrics", std.Handler("/metrics", mdlw,
-		handlers.CombinedLoggingHandler(logFile, promhttp.Handler())))
+	r.Use(otelmux.Middleware("web-static"))
 
 	// Health Checks used by kubernetes
 	r.HandleFunc("/healthz", HandleHealthz)
@@ -186,35 +164,33 @@ func (s *Server) RegisterHandlers(kafkaQueue goconcurrentqueue.Queue) {
 
 	if *enableKafka {
 		// wetsnow.com/kafka
-		kfkHandler := std.Handler("wetsnow.com", mdlw, handlers.CombinedLoggingHandler(logFile, newKafkaHandler(kafkaQueue)))
+		kfkHandler := handlers.CombinedLoggingHandler(logFile, newKafkaHandler(kafkaQueue))
 		r.Host("www.wetsnow.com").PathPrefix("/kafka").Handler(kfkHandler)
 	}
 
 	// wetsnow.com
-	wsHandler := std.Handler("wetsnow.com", mdlw,
-		handlers.CombinedLoggingHandler(logFile,
-			http.FileServer(http.Dir(path.Join(*dataDir, "wetsnow.com")))),
-	)
+	wsHandler := handlers.CombinedLoggingHandler(logFile,
+		http.FileServer(http.Dir(path.Join(*dataDir, "wetsnow.com"))))
+
+	// wetsnow.com/quote
+	qtHandler := handlers.CombinedLoggingHandler(logFile, newQuoteHandler(s.tracer))
+	r.Host("{subdomain:[a-z]*}.wetsnow.com").PathPrefix("/quote").Handler(qtHandler)
 	r.Host("{subdomain:[a-z]*}.wetsnow.com").Handler(wsHandler)
 
 	// galinasbeautyroom.com
 	r.Host("galinasbeautyroom.com").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "https://www.galinasbeautyroom.com/", http.StatusMovedPermanently)
 	})
-	gsbHandler := std.Handler("galinasbeautyroom.com", mdlw,
-		handlers.CombinedLoggingHandler(logFile,
-			http.FileServer(http.Dir(path.Join(*dataDir, "galinasbeautyroom.com")))),
-	)
+	gsbHandler := handlers.CombinedLoggingHandler(logFile,
+		http.FileServer(http.Dir(path.Join(*dataDir, "galinasbeautyroom.com"))))
 	r.Host("{subdomain:[a-z]*}.galinasbeautyroom.com").Handler(gsbHandler)
 
 	// dusselskolk.com
 	r.Host("dusselskolk.com").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "https://www.dusselskolk.com/", http.StatusMovedPermanently)
 	})
-	dsHandler := std.Handler("dusselskolk.com", mdlw,
-		handlers.CombinedLoggingHandler(logFile,
-			http.FileServer(http.Dir(path.Join(*dataDir, "dusselskolk.com")))),
-	)
+	dsHandler := handlers.CombinedLoggingHandler(logFile,
+		http.FileServer(http.Dir(path.Join(*dataDir, "dusselskolk.com"))))
 	r.Host("{subdomain:[a-z]*}.dusselskolk.com").Handler(dsHandler)
 
 	// Root
@@ -247,58 +223,44 @@ func HandleEnv(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "</pre>")
 }
 
-// tracingHandler calls handler and traces the execution
-type tracingHandler struct {
-	tracer trace.Tracer
-}
+// func (h *tracingHandler) traceRequest(w http.ResponseWriter, req *http.Request) {
 
-// Middleware implements the Gorilla MUX middleware interface
-func (h *tracingHandler) Middleware(next http.Handler) http.Handler {
+// 	ctx := req.Context()
+// 	tc := otel.GetTextMapPropagator()
+// 	// Extract traceID from the headers
+// 	ctxNew := tc.Extract(ctx, propagation.HeaderCarrier(req.Header))
 
-	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		h.traceRequest(w, req)
-		next.ServeHTTP(w, req)
-	})
-}
+// 	_, span := h.tracer.Start(ctxNew, "/")
+// 	defer span.End()
 
-func (h *tracingHandler) traceRequest(w http.ResponseWriter, req *http.Request) {
+// 	// log.Println(req.Header)
+// 	// log.Print(span.SpanContext().TraceID)
 
-	ctx := req.Context()
-	tc := otel.GetTextMapPropagator()
-	// Extract traceID from the headers
-	ctxNew := tc.Extract(ctx, propagation.HeaderCarrier(req.Header))
+// 	span.SetAttributes(HTTPMethodKey.String(req.Method))
+// 	span.SetAttributes(HTTPTargetKey.String(req.URL.Path))
+// 	span.SetAttributes(HTTPSchemeKey.String(req.Header.Get("X-Forwarded-Proto")))
+// 	span.SetAttributes(HTTPFlavorKey.String(req.Proto))
+// 	span.SetAttributes(HTTPServerNameKey.String(req.Host))
+// 	span.SetAttributes(HTTPRequestContentLengthKey.Int64(req.ContentLength))
+// 	span.SetAttributes(HTTPURLKey.String(fmt.Sprintf("%v://%v%v", req.Header.Get("X-Forwarded-Proto"), req.Host, req.URL.RequestURI())))
+// 	span.SetAttributes(NetPeerIPKey.String(req.RemoteAddr))
+// 	span.SetAttributes(HTTPUserAgentKey.String(req.UserAgent()))
+// 	span.SetAttributes(HTTPStatusCodeKey.Int(http.StatusOK))
 
-	_, span := h.tracer.Start(ctxNew, "/")
-	defer span.End()
-
-	// log.Println(req.Header)
-	// log.Print(span.SpanContext().TraceID)
-
-	span.SetAttributes(HTTPMethodKey.String(req.Method))
-	span.SetAttributes(HTTPTargetKey.String(req.URL.Path))
-	span.SetAttributes(HTTPSchemeKey.String(req.Header.Get("X-Forwarded-Proto")))
-	span.SetAttributes(HTTPFlavorKey.String(req.Proto))
-	span.SetAttributes(HTTPServerNameKey.String(req.Host))
-	span.SetAttributes(HTTPRequestContentLengthKey.Int64(req.ContentLength))
-	span.SetAttributes(HTTPURLKey.String(fmt.Sprintf("%v://%v%v", req.Header.Get("X-Forwarded-Proto"), req.Host, req.URL.RequestURI())))
-	span.SetAttributes(NetPeerIPKey.String(req.RemoteAddr))
-	span.SetAttributes(HTTPUserAgentKey.String(req.UserAgent()))
-	span.SetAttributes(HTTPStatusCodeKey.Int(http.StatusOK))
-
-	// _, span := h.tracer.Start(ctx, "/",
-	// 	trace.WithAttributes(
-	// 		// https://pkg.go.dev/go.opentelemetry.io/otel/semconv
-	// 		HTTPMethodKey.String(req.Method),
-	// 		HTTPTargetKey.String(req.URL.Path),
-	// 		HTTPSchemeKey.String(req.URL.Scheme),
-	// 		HTTPFlavorKey.String(req.Proto),
-	// 		HTTPServerNameKey.String(req.Host),
-	// 		HTTPRequestContentLengthKey.Int64(req.ContentLength),
-	// 		// HTTPFlavorKey.String(req.),
-	// 		HTTPURLKey.String(req.URL.Opaque),
-	// 		NetPeerIPKey.String(req.RemoteAddr),
-	// 		HTTPStatusCodeKey.Int(200),
-	// 		HTTPUserAgentKey.String(req.UserAgent()),
-	// 	),
-	// )
-}
+// _, span := h.tracer.Start(ctx, "/",
+// 	trace.WithAttributes(
+// 		// https://pkg.go.dev/go.opentelemetry.io/otel/semconv
+// 		HTTPMethodKey.String(req.Method),
+// 		HTTPTargetKey.String(req.URL.Path),
+// 		HTTPSchemeKey.String(req.URL.Scheme),
+// 		HTTPFlavorKey.String(req.Proto),
+// 		HTTPServerNameKey.String(req.Host),
+// 		HTTPRequestContentLengthKey.Int64(req.ContentLength),
+// 		// HTTPFlavorKey.String(req.),
+// 		HTTPURLKey.String(req.URL.Opaque),
+// 		NetPeerIPKey.String(req.RemoteAddr),
+// 		HTTPStatusCodeKey.Int(200),
+// 		HTTPUserAgentKey.String(req.UserAgent()),
+// 	),
+// )
+// }
