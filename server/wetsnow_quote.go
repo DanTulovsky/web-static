@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -8,6 +9,7 @@ import (
 
 	// "go.opentelemetry.io/contrib/instrumentation/net/http"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -38,11 +40,24 @@ func (qh *quoteHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// defer span.End()
 
 	w.Header().Add("Content-Type", "text/html")
-
-	req, err := http.NewRequestWithContext(req.Context(), "GET", *quoteServer, nil)
+	quote, err := qh.getQuote(req.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+
+	fmt.Fprintf(w, quote)
+}
+
+func (qh *quoteHandler) getQuote(ctx context.Context) (string, error) {
+	_, span := qh.tracer.Start(ctx, "getQuote")
+	defer span.End()
+
+	span.SetAttributes(attribute.String("quote_source", *quoteServer))
+
+	req, err := http.NewRequestWithContext(ctx, "GET", *quoteServer, nil)
+	if err != nil {
+		return "", err
 	}
 
 	// Until https://www.honeycomb.io/blog/from-0-to-insight-with-opentelemetry-in-go/ works properly
@@ -51,14 +66,15 @@ func (qh *quoteHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	tc.Inject(req.Context(), propagation.HeaderCarrier(req.Header))
 
 	// Make http call
+	span.AddEvent("Retrieving quote")
 	resp, err := qh.httpClient.Do(req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return "", err
 	}
 	defer resp.Body.Close()
+	span.AddEvent("Retrieved quote")
 
 	body, err := io.ReadAll(resp.Body)
 
-	fmt.Fprintf(w, string(body))
+	return string(body), err
 }
