@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 
-	. "go.opentelemetry.io/otel/semconv"
+	"go.opentelemetry.io/otel/semconv"
 )
 
 var (
@@ -54,8 +54,8 @@ func (qh *quoteHandler) getQuote(ctx context.Context) (string, error) {
 	_, span := qh.tracer.Start(ctx, "getQuote",
 		trace.WithSpanKind(trace.SpanKindClient),
 		trace.WithAttributes(
-			HTTPMethodKey.String("GET"),
-			HTTPURLKey.String(*quoteServer),
+			semconv.HTTPMethodKey.String("GET"),
+			semconv.HTTPURLKey.String(*quoteServer),
 		),
 	)
 	defer span.End()
@@ -79,7 +79,7 @@ func (qh *quoteHandler) getQuote(ctx context.Context) (string, error) {
 	defer resp.Body.Close()
 	span.AddEvent("Retrieved quote")
 
-	span.SetAttributes(HTTPStatusCodeKey.Int(resp.StatusCode))
+	span.SetAttributes(semconv.HTTPStatusCodeKey.Int(resp.StatusCode))
 	body, err := io.ReadAll(resp.Body)
 
 	return string(body), err
