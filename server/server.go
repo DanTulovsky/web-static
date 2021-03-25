@@ -175,7 +175,7 @@ func (s *Server) RegisterHandlers(kafkaQueue goconcurrentqueue.Queue) {
 	// wetsnow.com/quote
 	qtHandler := handlers.CombinedLoggingHandler(logFile, newQuoteHandler(s.tracer))
 	r.Host("{subdomain:[a-z]*}.wetsnow.com").PathPrefix("/quote").Handler(qtHandler)
-	r.Host("{subdomain:[a-z]*}.wetsnow.com").Handler(wsHandler)
+	r.Host("{subdomain:[a-z]*}.wetsnow.com").PathPrefix("/").Handler(wsHandler)
 
 	// galinasbeautyroom.com
 	r.Host("galinasbeautyroom.com").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
