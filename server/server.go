@@ -183,7 +183,7 @@ func (s *Server) RegisterHandlers(kafkaQueue goconcurrentqueue.Queue) {
 	})
 	gsbHandler := handlers.CombinedLoggingHandler(logFile,
 		http.FileServer(http.Dir(path.Join(*dataDir, "galinasbeautyroom.com"))))
-	r.Host("{subdomain:[a-z]*}.galinasbeautyroom.com").Handler(gsbHandler)
+	r.Host("{subdomain:[a-z]*}.galinasbeautyroom.com").PathPrefix("/").Handler(gsbHandler)
 
 	// dusselskolk.com
 	r.Host("dusselskolk.com").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -191,7 +191,7 @@ func (s *Server) RegisterHandlers(kafkaQueue goconcurrentqueue.Queue) {
 	})
 	dsHandler := handlers.CombinedLoggingHandler(logFile,
 		http.FileServer(http.Dir(path.Join(*dataDir, "dusselskolk.com"))))
-	r.Host("{subdomain:[a-z]*}.dusselskolk.com").Handler(dsHandler)
+	r.Host("{subdomain:[a-z]*}.dusselskolk.com").PathPrefix("/").Handler(dsHandler)
 
 	// Root
 	r.PathPrefix("/").Handler(handlers.CombinedLoggingHandler(logFile, &RootHandler{}))
