@@ -108,7 +108,12 @@ func (s *Server) Run() error {
 	} else {
 		s.RegisterHandlers(nil)
 	}
-	go s.startPprof()
+	go func() {
+		err := s.startPprof()
+		if err != nil {
+
+		}
+	}()
 
 	log.Printf("Staritng http server on %v", *addr)
 	return s.Srv.ListenAndServe()

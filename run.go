@@ -43,7 +43,10 @@ func main() {
 	}
 
 	go func() {
-		feServer.Run()
+		err := feServer.Run()
+		if err != nil {
+			return
+		}
 	}()
 
 	c := make(chan os.Signal, 1)
@@ -58,7 +61,10 @@ func main() {
 	log.Printf("shutting down in %v if active connections...", *gracefulTimeout)
 	ctx, cancel := context.WithTimeout(context.Background(), *gracefulTimeout)
 	defer cancel()
-	feServer.Srv.Shutdown(ctx)
+	err = feServer.Srv.Shutdown(ctx)
+	if err != nil {
+		return
+	}
 	os.Exit(0)
 }
 
