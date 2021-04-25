@@ -51,8 +51,6 @@ img {
 .image img {
   filter: blur(0px);
   transition: filter 0.3s ease-in;
-  filter: blur(0px);
-  transition: filter 0.3s ease-in;
   transform: scale(1.1);
 }
 

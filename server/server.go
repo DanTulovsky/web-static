@@ -160,7 +160,7 @@ func (s *Server) RegisterHandlers(kafkaQueue goconcurrentqueue.Queue) {
 	r.HandleFunc("/healthz", HandleHealthz)
 	r.HandleFunc("/servez", HandleServez)
 	r.HandleFunc("/env", HandleEnv)
-	r.HandleFunc("/auth", HandleEnv)
+	r.HandleFunc("/auth/", HandleEnv)
 
 	// wetsnow.com redirect
 	r.Host("wetsnow.com").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
