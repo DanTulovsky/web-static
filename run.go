@@ -76,56 +76,8 @@ func enableOpenTelemetry() launcher.Launcher {
 		launcher.WithServiceVersion(*version),
 		// launcher.WithAccessToken("{your_access_token}"),  # in env
 		launcher.WithLogLevel("info"),
-		// launcher.WithPropagators([]string{"b3", "tracecontext"}),
 		launcher.WithPropagators([]string{"b3", "baggage", "tracecontext"}),
 		launcher.WithMetricsEnabled(*enableMetrics),
 	)
 	return ls
 }
-
-// func enableTracer() (io.Closer, error) {
-// 	log.Printf("Enabling OpenTracing tracer...")
-
-// 	// ambassador uses zipkin
-// 	zipkinPropagator := zipkin.NewZipkinB3HTTPHeaderPropagator()
-// 	serviceName := jaegerServiceName
-// 	jLogger := jaegerlog.StdLogger
-// 	jMetricsFactory := metrics.NullFactory
-
-// 	cfg, err := jaegercfg.FromEnv()
-// 	if err != nil {
-// 		// parsing errors might happen here, such as when we get a string where we expect a number
-// 		log.Printf("Could not parse Jaeger env vars: %s", err.Error())
-// 		return nil, err
-// 	}
-
-// 	cfg.Reporter.CollectorEndpoint = jaegerCollectorEndpoint
-// 	// github.com/DanTulovsky/k8s-configs/configs/jaeger/operator-config.yaml has the config
-// 	cfg.Sampler = &jaegercfg.SamplerConfig{
-// 		Type:              jaeger.SamplerTypeRemote,
-// 		Param:             0, // default sampling if server does not answer
-// 		SamplingServerURL: jaegerSamplingServerURL,
-// 		// Type:  jaeger.SamplerTypeConst,
-// 		// Param: 1,
-// 	}
-// 	cfg.RPCMetrics = true
-
-// 	// Create tracer and then initialize global tracer
-// 	closer, err := cfg.InitGlobalTracer(
-// 		serviceName,
-// 		jaegercfg.Logger(jLogger),
-// 		jaegercfg.Metrics(jMetricsFactory),
-// 		// jaegercfg.Injector(opentracing.HTTPHeaders, zipkinPropagator),
-// 		// upstream from ambassador is in zipkin format
-// 		jaegercfg.Extractor(opentracing.HTTPHeaders, zipkinPropagator),
-// 		jaegercfg.ZipkinSharedRPCSpan(true),
-// 		// jaegercfg.Ta
-// 	)
-
-// 	if err != nil {
-// 		log.Printf("Could not initialize jaeger tracer: %s", err.Error())
-// 		return nil, err
-// 	}
-
-// 	return closer, nil
-// }
