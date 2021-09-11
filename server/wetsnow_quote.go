@@ -23,7 +23,7 @@ import (
 var (
 	quoteServer        = flag.String("quote_server", "localhost:8080", "http address of the quote server")
 	quoteServerGRPC    = flag.String("quote_server_grpc", "localhost:8081", "grpc address of the quote server")
-	quoteServerUseGRPC = flag.Bool("quote_server_grpc", true, "Set to use grpc to talk to quote server")
+	quoteServerUseGRPC = flag.Bool("quote_server_use_grpc", true, "Set to use grpc to talk to quote server")
 )
 
 type quoteHandler struct {
