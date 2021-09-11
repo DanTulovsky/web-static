@@ -21,8 +21,9 @@ import (
 )
 
 var (
-	quoteServer        = flag.String("quote_server", "localhost:8080", "http address of the quote server")
-	quoteServerGRPC    = flag.String("quote_server_grpc", "localhost:8081", "grpc address of the quote server")
+	quoteServer     = flag.String("quote_server", "localhost:8080", "http address of the quote server")
+	quoteServerGRPC = flag.String("quote_server_grpc", "localhost:8081", "grpc address of the quote server")
+	// For director, use: quote-server-gke:8000
 	quoteServerUseGRPC = flag.Bool("quote_server_use_grpc", true, "Set to use grpc to talk to quote server")
 )
 
