@@ -21,8 +21,9 @@ import (
 )
 
 var (
-	quoteServer     = flag.String("quote_server", "localhost:8080", "http address of the quote server")
-	quoteServerGRPC = flag.String("quote_server_grpc", "localhost:8081", "grpc address of the quote server")
+	quoteServer        = flag.String("quote_server", "localhost:8080", "http address of the quote server")
+	quoteServerGRPC    = flag.String("quote_server_grpc", "localhost:8081", "grpc address of the quote server")
+	quoteServerUseGRPC = flag.Bool("quote_server_grpc", true, "Set to use grpc to talk to quote server")
 )
 
 type quoteHandler struct {
@@ -36,16 +37,17 @@ func newQuoteHandler(t trace.Tracer) *quoteHandler {
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
-	defer conn.Close()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			log.Printf("failed closing quote conn: %v", err)
+		}
+	}()
 	c := pb.NewQuoteClient(conn)
 
 	return &quoteHandler{
 		tracer:     t,
 		httpClient: &http.Client{},
 		grpcClient: c,
-		// httpClient: http.Client{
-		// 	Transport: otelhttp.NewTransport(http.DefaulTransport),
-		// },
 	}
 }
 
@@ -56,15 +58,26 @@ func (qh *quoteHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// defer span.End()
 
 	w.Header().Add("Content-Type", "text/html")
-	//quote, err := qh.getQuote(req.Context())
-	quote, err := qh.getQuoteGRPC(req.Context())
 
+	var qfunc func(context.Context) (string, error)
+
+	switch *quoteServerUseGRPC {
+	case true:
+		qfunc = qh.getQuoteGRPC
+	default:
+		qfunc = qh.getQuote
+	}
+
+	quote, err := qfunc(req.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	fmt.Fprintf(w, quote)
+	_, err = fmt.Fprintf(w, quote)
+	if err != nil {
+		log.Printf("error writing to output: %v", err)
+	}
 }
 
 func (qh *quoteHandler) getQuoteGRPC(ctx context.Context) (string, error) {
@@ -118,7 +131,12 @@ func (qh *quoteHandler) getQuote(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("error closing body: %v", err)
+		}
+	}()
+
 	span.AddEvent("Retrieved quote")
 
 	span.SetAttributes(semconv.HTTPStatusCodeKey.Int(resp.StatusCode))
