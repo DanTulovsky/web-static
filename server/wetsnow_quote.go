@@ -9,13 +9,15 @@ import (
 	"net/http"
 	"time"
 
-	"google.golang.org/grpc"
-
-	// "go.opentelemetry.io/contrib/instrumentation/net/http"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/semconv"
 	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	xdscreds "google.golang.org/grpc/credentials/xds"
+
+	_ "google.golang.org/grpc/xds"
 
 	pb "github.com/DanTulovsky/quote-server/proto"
 )
@@ -23,8 +25,9 @@ import (
 var (
 	quoteServer     = flag.String("quote_server", "localhost:8080", "http address of the quote server")
 	quoteServerGRPC = flag.String("quote_server_grpc", "localhost:8081", "grpc address of the quote server")
-	// For director, use: quote-server-gke:8000
+	// For director, use: xds:///quote-server-gke:8000
 	quoteServerUseGRPC = flag.Bool("quote_server_use_grpc", true, "Set to use grpc to talk to quote server")
+	xdsCreds           = flag.Bool("xds_creds", false, "whether the server should use xDS APIs to receive security configuration")
 )
 
 type quoteHandler struct {
@@ -35,7 +38,17 @@ type quoteHandler struct {
 
 func newQuoteHandler(t trace.Tracer) *quoteHandler {
 	log.Printf("Connecting to quote server on: %v", *quoteServerGRPC)
-	conn, err := grpc.Dial(*quoteServerGRPC, grpc.WithInsecure())
+	creds := insecure.NewCredentials()
+
+	if *xdsCreds {
+		log.Println("Using xDS credentials...")
+		var err error
+		if creds, err = xdscreds.NewClientCredentials(xdscreds.ClientOptions{FallbackCreds: insecure.NewCredentials()}); err != nil {
+			log.Fatalf("failed to create client-side xDS credentials: %v", err)
+		}
+	}
+
+	conn, err := grpc.Dial(*quoteServerGRPC, grpc.WithTransportCredentials(creds))
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
