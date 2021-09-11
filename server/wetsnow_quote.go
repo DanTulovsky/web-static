@@ -33,7 +33,7 @@ type quoteHandler struct {
 }
 
 func newQuoteHandler(t trace.Tracer) *quoteHandler {
-	conn, err := grpc.Dial(*quoteServerGRPC, grpc.WithInsecure(), grpc.WithBlock())
+	conn, err := grpc.Dial(*quoteServerGRPC, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
