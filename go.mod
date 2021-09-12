@@ -11,6 +11,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/lightstep/otel-launcher-go v0.18.0
+	github.com/prometheus/client_golang v1.10.0
 	go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux v0.18.0
 	// go.opentelemetry.io/contrib v0.19.0 // indirect
 	// go.opentelemetry.io/contrib/propagators v0.19.0 // indirect
