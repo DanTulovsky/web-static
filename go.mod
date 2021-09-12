@@ -9,6 +9,7 @@ require (
 	github.com/google/uuid v1.2.0
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
+	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/lightstep/otel-launcher-go v0.18.0
 	go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux v0.18.0
 	// go.opentelemetry.io/contrib v0.19.0 // indirect

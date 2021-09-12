@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/grpc-ecosystem/go-grpc-prometheus"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/semconv"
@@ -48,7 +49,10 @@ func newQuoteHandler(t trace.Tracer) *quoteHandler {
 		}
 	}
 
-	conn, err := grpc.Dial(*quoteServerGRPC, grpc.WithTransportCredentials(creds))
+	conn, err := grpc.Dial(*quoteServerGRPC,
+		grpc.WithTransportCredentials(creds),
+		grpc.WithUnaryInterceptor(grpc_prometheus.UnaryClientInterceptor),
+		grpc.WithStreamInterceptor(grpc_prometheus.StreamClientInterceptor))
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
