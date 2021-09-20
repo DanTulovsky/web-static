@@ -124,7 +124,11 @@ func (s *Server) Run() error {
 func (s *Server) kafkaSubscribe(kafkaQueue goconcurrentqueue.Queue) {
 	log.Println("Starting kafka consumer...")
 	c := newKafkaConsumer()
-	defer c.Close()
+	defer func() {
+		if err := c.Close(); err != nil {
+			log.Println(err)
+		}
+	}()
 
 	for {
 		msg, err := c.ReadMessage(-1)
