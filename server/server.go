@@ -14,6 +14,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	"github.com/enriquebris/goconcurrentqueue"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -175,6 +177,7 @@ func (s *Server) RegisterHandlers(kafkaQueue goconcurrentqueue.Queue) {
 	r.HandleFunc("/servez", HandleServez)
 	r.HandleFunc("/env", HandleEnv)
 	r.HandleFunc("/auth/", HandleEnv)
+	r.Handle("/metrics", promhttp.Handler())
 
 	// wetsnow.com redirect
 	r.Host("wetsnow.com").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
