@@ -148,6 +148,20 @@ func (s *Server) startPprof() error {
 	return nil
 }
 
+// setHeaders sets shared headers
+func setHeaders(next http.Handler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+		w.Header().Set("Content-Security-Policy", "default-src 'none'; script-src 'self'")
+		w.Header().Set("X-Frame-Options", "SAMEORIGIN")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+		//w.Header().Set("Feature-Policy", "")
+
+		next.ServeHTTP(w, r)
+	}
+}
+
 // RegisterHandlers registers http handlers
 func (s *Server) RegisterHandlers(kafkaQueue goconcurrentqueue.Queue) {
 	logFile := enableLogging()
@@ -175,10 +189,10 @@ func (s *Server) RegisterHandlers(kafkaQueue goconcurrentqueue.Queue) {
 
 	// wetsnow.com
 	wsHandler := handlers.CombinedLoggingHandler(logFile,
-		http.FileServer(http.Dir(path.Join(*dataDir, "wetsnow.com"))))
+		setHeaders(http.FileServer(http.Dir(path.Join(*dataDir, "wetsnow.com")))))
 
 	// wetsnow.com/quote
-	qtHandler := handlers.CombinedLoggingHandler(logFile, newQuoteHandler(s.tracer))
+	qtHandler := setHeaders(handlers.CombinedLoggingHandler(logFile, newQuoteHandler(s.tracer)))
 	r.Host("{subdomain:[a-z]*}.wetsnow.com").PathPrefix("/quote").Handler(qtHandler)
 	r.Host("{subdomain:[a-z]*}.wetsnow.com").PathPrefix("/").Handler(wsHandler)
 
@@ -187,7 +201,7 @@ func (s *Server) RegisterHandlers(kafkaQueue goconcurrentqueue.Queue) {
 		http.Redirect(w, r, "https://www.galinasbeautyroom.com/", http.StatusMovedPermanently)
 	})
 	gsbHandler := handlers.CombinedLoggingHandler(logFile,
-		http.FileServer(http.Dir(path.Join(*dataDir, "galinasbeautyroom.com"))))
+		setHeaders(http.FileServer(http.Dir(path.Join(*dataDir, "galinasbeautyroom.com")))))
 	r.Host("{subdomain:[a-z]*}.galinasbeautyroom.com").PathPrefix("/").Handler(gsbHandler)
 
 	// dusselskolk.com
@@ -195,11 +209,11 @@ func (s *Server) RegisterHandlers(kafkaQueue goconcurrentqueue.Queue) {
 		http.Redirect(w, r, "https://www.dusselskolk.com/", http.StatusMovedPermanently)
 	})
 	dsHandler := handlers.CombinedLoggingHandler(logFile,
-		http.FileServer(http.Dir(path.Join(*dataDir, "dusselskolk.com"))))
+		setHeaders(http.FileServer(http.Dir(path.Join(*dataDir, "dusselskolk.com")))))
 	r.Host("{subdomain:[a-z]*}.dusselskolk.com").PathPrefix("/").Handler(dsHandler)
 
 	// Root
-	r.PathPrefix("/").Handler(handlers.CombinedLoggingHandler(logFile, &RootHandler{}))
+	r.PathPrefix("/").Handler(setHeaders(handlers.CombinedLoggingHandler(logFile, &RootHandler{})))
 }
 
 func (h RootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
