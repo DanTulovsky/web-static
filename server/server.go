@@ -194,6 +194,11 @@ func (s *Server) RegisterHandlers(kafkaQueue goconcurrentqueue.Queue) {
 		r.Host("www.wetsnow.com").PathPrefix("/kafka").Handler(kfkHandler)
 	}
 
+	// login.wetsnow.com
+	loginHandler := handlers.CombinedLoggingHandler(logFile,
+		setHeaders(http.FileServer(http.Dir(path.Join(*dataDir, "login.wetsnow.com")))))
+	r.Host("login.wetsnow.com").PathPrefix("/").Handler(loginHandler)
+
 	// wetsnow.com
 	wsHandler := handlers.CombinedLoggingHandler(logFile,
 		setHeaders(http.FileServer(http.Dir(path.Join(*dataDir, "wetsnow.com")))))
