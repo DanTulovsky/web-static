@@ -4,21 +4,18 @@ import (
 	"context"
 	"flag"
 	"log"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"time"
 
-	"github.com/DanTulovsky/web-static/server"
-	// go mod edit -replace github.com/lightstep/otel-launcher-go=/Users/dant/go/src/github.com/lightstep/otel-launcher-go
 	"github.com/lightstep/otel-launcher-go/launcher"
 	"go.opentelemetry.io/otel"
 
-	_ "net/http/pprof"
+	"github.com/DanTulovsky/web-static/server"
 )
 
 const (
-	// jaegerSamplingServerURL = "http://otel-collector.observability:5778/sampling"
-	// jaegerCollectorEndpoint = "http://otel-collector.observability:14268/api/traces"
 	otelServiceName = "web-static"
 )
 

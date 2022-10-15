@@ -20,7 +20,6 @@ import (
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 
-	// . "go.opentelemetry.io/otel/semconv"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -162,7 +161,7 @@ func setHeaders(next http.Handler) http.HandlerFunc {
 		w.Header().Set("X-Frame-Options", "SAMEORIGIN")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
-		//w.Header().Set("Permissions-Policy", "")
+		// w.Header().Set("Permissions-Policy", "")
 
 		next.ServeHTTP(w, r)
 	}
@@ -280,7 +279,6 @@ func HandleEnv(w http.ResponseWriter, r *http.Request) {
 
 // _, span := h.tracer.Start(ctx, "/",
 // 	trace.WithAttributes(
-// 		// https://pkg.go.dev/go.opentelemetry.io/otel/semconv
 // 		HTTPMethodKey.String(req.Method),
 // 		HTTPTargetKey.String(req.URL.Path),
 // 		HTTPSchemeKey.String(req.URL.Scheme),
