@@ -1,6 +1,6 @@
 export IMAGE_NAME="frontend"
-export IMAGE_ID="ghcr.io/dantulovsky/web-static/$IMAGE_NAME"
-export VERSION="0.0.13"
+
+export VERSION="0.0.44"
 
 echo "Building local/$IMAGE_NAME"
 docker build . --file Dockerfile --tag local/$IMAGE_NAME
