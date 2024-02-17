@@ -1,0 +1,17 @@
+apiVersion: skaffold/v1beta13
+kind: Config
+build:
+  artifacts:
+    - image: 'gcr.io/snowcloud-01/static-web/frontend'
+  tagPolicy:
+    # gitCommit: {}
+    dateTime:
+      format: "2006-01-02_15-04-05.999_MST"
+      timezone: "Local"
+  googleCloudBuild:
+    projectId: snowcloud-01
+deploy:
+  kubectl:
+    manifests:
+      - k8s/20-service.yaml
+      - k8s/30-deployment.yaml
